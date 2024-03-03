@@ -4,19 +4,17 @@ before:
 
 builds:
   - main: ./main.go
-    binary: pmesh
     id: pmesh
+    binary: pmesh
+    goos: [windows, linux, darwin]
+    goarch: [amd64, arm64]
     env:
       - CGO_ENABLED=0
-    goos: [ windows,linux,darwin ]
-      goarch: [ amd64,arm64 ]
 
 archives:
   - format: zip
-      id: pmesh
-      builds: [ pmesh ]
-      replacements:
-        darwin: macOS
+    id: pmesh
+    builds: [pmesh]
 
 checksum:
   algorithm: sha256
