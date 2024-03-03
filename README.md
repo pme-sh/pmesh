@@ -1,6 +1,20 @@
-# pmesh
+<p align="center">
+  <img src="logos/pmesh_title.png" width="248" alt="pme.sh">
+</p>
+<p align="center">
+   <a href="https://github.com/pme-sh/pmesh/actions/workflows/build.yml">
+      <img src="https://github.com/pme-sh/pmesh/actions/workflows/build.yml/badge.svg" alt="Build status">
+   </a>
+   <a href="https://github.com/pme-sh/pmesh/actions/workflows/release.yml">
+      <img src="https://github.com/pme-sh/pmesh/actions/workflows/release.yml/badge.svg" alt="Release status">
+   </a>
+</p>
 
-pmesh is an all-in-one service manager, reverse proxy, and enterprise service bus. It is designed to be a simple and powerful all-in-one replacement for a wide variety of tools commonly deployed in web services.
+[pmesh](https://pme.sh) is an all-in-one service manager, reverse proxy, and enterprise service bus. It is designed to be a simple and powerful all-in-one replacement for a wide variety of tools commonly deployed in web services. It is currently in alpha and under active development.
+
+## Features
+
+The main objective of pmesh is to provide feature parity with all of the following tools, while being simpler and more powerful, with a single binary and a single configuration file:
 
 - **Reverse proxies (nginx, traefik, haproxy, ...)**: pmesh can act as a reverse proxy for your services, providing SSL termination, routing, rate-limiting, load balancing and more at very high speeds (200k+ req/s on a 12-core server). It also provides many additional features such as automatic GeoIP identification, automatic TLS certificate issuance, builtin URL signing, publishing webhooks as messages across the bus, and more.
 
@@ -15,6 +29,8 @@ pmesh is an all-in-one service manager, reverse proxy, and enterprise service bu
 - **Topology management**: pmesh instances can be spread across multiple machines, automatically discovering each other and forming a cluster, optimizing routes based on region detection, all with a simple `pmesh join pmtp://...` command. No impossible to maintain configuration of servers, no manual assignment of routes and regions, no need to restart any service. Automatically manage `/etc/hosts`, transparently issue TLS certificates, and authenticate mutually with client-certificates.
 
 - **Distributed logging**: pmesh can capture logs from your services and provides a simple and powerful API for querying and observing them, including tailing logs, searching logs, and more, across all your services, all your machines, and all your sessions. It will also assign a unique ID to each request that can be used to precisely identify the logs associated with a request.
+
+## Usage
 
 ```
 Usage:

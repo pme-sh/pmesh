@@ -1,4 +1,4 @@
-name: 🚀 Release
+name: Release 🚀
 permissions: write-all
 on:
   push:
