@@ -16,3 +16,7 @@ __debug_bin*
 *.i64
 dev
 .vscode
+build/
+build.bat
+/pmesh
+/pmesh.exe
