@@ -1,0 +1,66 @@
+ipinfo:
+  #maxmind: "xxxx"
+
+services:
+  api: !Pnpm
+    log: session
+    cluster: 16
+    auto_scale: true
+    lb:
+      strat: round-robin
+      state: none
+  api-go: !Go
+    log: session
+
+  #frontend: !Pnpm
+  #  lb:
+  #    strat: round-robin
+  #    state: none
+  #    404:
+  #      #limit: 1/s block_after=2/s block_for=10m
+  #      handle:
+  #        - log "hi"
+  #  #cluster: 50%
+  #  monitor:
+  #    test:
+  #      "front-page-test": GET / 200
+  cdn: !FS
+    path: ./static
+
+  #frontend: !Proxy
+  #  upstreams:
+  #    - localhost:3000
+  #  monitor:
+  #    test:
+  #      "front-page-test": GET / 200
+
+runners:
+  print.hello:
+    #schedule:
+    #  - interval: 15s
+    #    payload: { msg: "hello" }
+    route:
+      - api # POST /print/hello
+
+hosts:
+  - pmesh.local
+  - api-go.pmesh.local
+  - cdn.pmesh.local
+  - api.pmesh.local: 127.0.0.1
+
+server:
+  pme.sh, pmesh.local:
+    router:
+      - write-timeout never
+      - read-timeout  10s
+      - pme.sh/test:
+          - publish test
+      - api-go.pme.sh/health: portal http://pm3/health/api-go
+      - api-go.pme.sh/: api-go
+      - api.pme.sh/: api
+      - cdn.pme.sh/:
+          - rewrite /(.*) /$1.txt
+          # - limit @cdn 1/s burst=0
+          - cdn
+      #- frontend
+#custom_errors: /tmp
