@@ -3,9 +3,8 @@ before:
     - go mod tidy
 
 builds:
-  - main: ./main.go
-    id: pmesh
-    binary: pmesh
+  - id: pmesh
+    binary: build/pmesh
     goos: [windows, linux, darwin]
     goarch: [amd64, arm64]
     env:
