@@ -1,10 +1,9 @@
 name: 🚀 Release
-
+permissions: write-all
 on:
   push:
     tags:
       - "v*"
-
 jobs:
   release:
     runs-on: ubuntu-latest
