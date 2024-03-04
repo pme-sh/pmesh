@@ -30,6 +30,14 @@ The main objective of pmesh is to provide feature parity with all of the followi
 
 - **Distributed logging**: pmesh can capture logs from your services and provides a simple and powerful API for querying and observing them, including tailing logs, searching logs, and more, across all your services, all your machines, and all your sessions. It will also assign a unique ID to each request that can be used to precisely identify the logs associated with a request.
 
+## Building from source
+
+Make sure you have the latest version of Go installed and run:
+
+```sh
+go install get.pme.sh/pmesh@latest
+```
+
 ## Usage
 
 ```
