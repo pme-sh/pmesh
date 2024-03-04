@@ -131,10 +131,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	originalPath := r.URL.Path
 	r.URL.Path = CleanPath(originalPath)
 	r.URL.Host = r.Host
-	if r.URL.Path != originalPath {
-		http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
-		return
-	}
 
 	// Guard against panics.
 	cw := NewConditionalResponse(w)
@@ -167,10 +163,10 @@ func NewServer(ctx context.Context) (s *Server) {
 	logger := xlog.NewDomain("http")
 	ctx = logger.WithContext(ctx)
 	s = &Server{
-		Context: ctx,
-		logger:  logger,
-		Signer:  urlsigner.New(config.Get().Secret),
+		logger: logger,
+		Signer: urlsigner.New(config.Get().Secret),
 	}
+	s.Context = context.WithValue(ctx, serverKey{}, s)
 
 	mauth := security.CreateMutualAuthenticator(config.Get().Secret, "h2", "http/1.1")
 	logf, logw := xlog.ToTextWriter(logger, xlog.LevelError)
@@ -182,7 +178,7 @@ func NewServer(ctx context.Context) (s *Server) {
 		WriteTimeout:                 60 * time.Second,
 		MaxHeaderBytes:               1 << 20,
 		BaseContext: func(l net.Listener) context.Context {
-			return ctx
+			return s.Context
 		},
 		ErrorLog: log.New(logf, "", 0),
 		TLSConfig: mauth.WrapServer(&tls.Config{

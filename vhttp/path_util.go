@@ -6,11 +6,20 @@ import (
 )
 
 func CleanPath(s string) string {
+	hasTrailSlash := strings.HasSuffix(s, "/")
 	s = path.Clean(s)
 	if s == "." {
 		return "/"
-	} else if !strings.HasPrefix(s, "/") {
-		return "/" + s
+	}
+
+	// Ensure there's a leading slash
+	if !strings.HasPrefix(s, "/") {
+		s = "/" + s
+	}
+
+	// Add trailing slash back
+	if hasTrailSlash && !strings.HasSuffix(s, "/") {
+		s += "/"
 	}
 	return s
 }
@@ -19,9 +28,6 @@ func NormalPath(s string) string {
 	if !strings.HasPrefix(s, "/") {
 		s = "/" + s
 	}
-
-	// Remove trailing slash
-	s = strings.TrimSuffix(s, "/")
 
 	// Remove double slashes
 	if strings.Contains(s, "//") {
