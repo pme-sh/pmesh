@@ -577,7 +577,7 @@ func (run *AppServer) spawnProcess(initialProcess bool) (err error) {
 			defer cancel()
 			for {
 				logger.Info().Msg("Waiting for app to become healthy")
-				healthy := run.Monitor.Check(readyCtx, nil, upstream.Address)
+				healthy := run.Monitor.Check(readyCtx, logger, upstream.Address)
 				if healthy {
 					logger.Info().Str("address", upstream.Address).Msg("App started and healthy")
 					upstream.SetHealthy(true)

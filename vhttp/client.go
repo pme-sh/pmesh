@@ -280,10 +280,7 @@ func StartClientRequest(r *http.Request, infoProvider netx.IPInfoProvider) (rctx
 	}
 
 	// Start the request.
-	ray := px.RayID
-	if ray == "" {
-		ray = Raygen.Next()
-	}
+	ray := Raygen.Next()
 	rctx = session.startRequest(ctx, t, r)
 
 	// Set the ray ID.

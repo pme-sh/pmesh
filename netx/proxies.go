@@ -17,7 +17,6 @@ const (
 var (
 	hdrCfConnectingIP = http.CanonicalHeaderKey("CF-Connecting-IP")
 	hdrCfCountry      = http.CanonicalHeaderKey("CF-IPCountry")
-	hdrCfRay          = http.CanonicalHeaderKey("CF-Ray")
 	hdrXForwardedFor  = http.CanonicalHeaderKey("X-Forwarded-For")
 )
 
@@ -26,7 +25,6 @@ type ProxyTraits struct {
 	Edge        IP      // Parsed value from http.Request.RemoteAddr
 	Origin      IP      // Original client
 	CountryHint CountryISO
-	RayID       string
 }
 
 func findFirstPublicIPInForwardList(values []string) IP {
@@ -72,9 +70,6 @@ func ResolveProxyTraits(request *http.Request) (traits ProxyTraits) {
 					if v := values[0]; len(v) == 2 {
 						traits.CountryHint = CountryISO{v[0], v[1]}
 					}
-				}
-				if values := request.Header[hdrCfRay]; len(values) == 1 {
-					traits.RayID = values[0]
 				}
 			}
 		}
