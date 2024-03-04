@@ -29,6 +29,10 @@ func parseInput(into any, w http.ResponseWriter, req *http.Request) (err error) 
 		*p = w
 		return nil
 	}
+	if p, ok := into.(*json.RawMessage); ok {
+		*p, err = io.ReadAll(req.Body)
+		return
+	}
 
 	// Mix URL query parameters.
 	implicit := req.URL.Query()
