@@ -298,11 +298,11 @@ func (lb *LoadBalancer) OnErrorResponse(ctx *requestContext, r *http.Response) h
 		// If we can retry:
 		if retryError := ctx.Retrier.ConsumeAny(); retryError == nil {
 			// Log and retry.
-			lb.getLogger().Warn().Str("status", r.Status).Str("upstream", ctx.Upstream.Address).Msg("retriable server error")
+			lb.getLogger().Warn().Str("status", r.Status).Stringer("upstream", ctx.Upstream).Msg("retriable server error")
 			return lbRetryHandler{ctx}
 		} else {
 			// Log.
-			lb.getLogger().Error().Str("status", r.Status).Err(retryError).Str("upstream", ctx.Upstream.Address).Msg("fatal server error")
+			lb.getLogger().Error().Str("status", r.Status).Err(retryError).Stringer("upstream", ctx.Upstream).Msg("fatal server error")
 		}
 	}
 	return nil
@@ -314,11 +314,11 @@ func (lb *LoadBalancer) OnError(ctx *requestContext, w http.ResponseWriter, r *h
 	// If we can retry:
 	if retryError := ctx.Retrier.Consume(err); retryError == nil {
 		// Log and retry.
-		lb.getLogger().Warn().Err(err).Str("upstream", ctx.Upstream.Address).Msg("retriable upstream error")
+		lb.getLogger().Warn().Err(err).Stringer("upstream", ctx.Upstream).Msg("retriable upstream error")
 		lb.serveHTTP(ctx, w, ctx.Request)
 		return
 	} else {
-		lb.getLogger().Error().Err(err).Str("upstream", ctx.Upstream.Address).Msg("fatal upstream error")
+		lb.getLogger().Error().Err(err).Stringer("upstream", ctx.Upstream).Msg("fatal upstream error")
 	}
 	vhttp.Error(w, ctx.Request, vhttp.StatusUpstreamError)
 }

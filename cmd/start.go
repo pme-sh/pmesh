@@ -50,7 +50,7 @@ func init() {
 
 	config.RootCommand.AddCommand(&cobra.Command{
 		Use:     "go [manifest]",
-		Short:   "Start the pmesh node with a manifest file",
+		Short:   "Start the pmesh node with a manifest",
 		Args:    cobra.MaximumNArgs(1),
 		GroupID: refGroup("daemon", "Daemon"),
 		Run: func(cmd *cobra.Command, args []string) {
