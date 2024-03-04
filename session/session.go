@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -175,7 +176,6 @@ func (s *Session) StartService(name string, sv service.Service, invalidate bool)
 	xlog.InfoC(ctx).Msg("Service started")
 	return state, nil
 }
-
 func (s *Session) Reload(invalidate bool) error {
 	s.Lock()
 	defer s.Unlock()
@@ -295,25 +295,29 @@ func (s *Session) ReloadLocked(invalidate bool) error {
 	return nil
 }
 
-func (s *Session) Open() error {
-	xlog.Info().Stringer("id", s.ID).Msg("Session started")
+func (s *Session) Open(ctx context.Context) error {
+	xlog.Info().Stringer("id", s.ID).Msg("Session starting")
 	security.ObtainCertificate(config.Get().Secret) // Ensure the certificate is ready before starting the server
-	if err := s.Nats.Open(context.Background()); err != nil {
-		xlog.Err(err).Msg("Failed to open nats")
-		return err
+
+	// Start the NATS gateway
+	if err := s.Nats.Open(ctx); err != nil {
+		return fmt.Errorf("failed to open nats: %w", err)
 	}
 
+	// Start the peer list
 	s.Peerlist = xpost.NewPeerlist(s.Nats)
-	if err := s.Peerlist.Open(s.Context); err != nil {
-		xlog.Err(err).Msg("Failed to open peer list")
-		return err
+	if err := s.Peerlist.Open(ctx); err != nil {
+		return fmt.Errorf("failed to open peer list: %w", err)
 	}
+
+	// Log the discovered peers
 	if peers := s.Peerlist.List(true); len(peers) > 0 {
 		for _, peer := range peers {
 			xlog.Info().Str("host", peer.Host).Str("ip", peer.IP).Float64("lat", peer.Lat).Float64("lon", peer.Lon).Str("country", peer.Country).Str("isp", peer.ISP).Msg("Discovered peer")
 		}
 	}
 
+	// Add the SD source
 	s.Peerlist.AddSDSource(func(out map[string]any) {
 		out["commit"] = os.Getenv("PM3_COMMIT")
 		out["branch"] = os.Getenv("PM3_BRANCH")
@@ -337,14 +341,17 @@ func (s *Session) Open() error {
 		out["services"] = healthyServices
 	})
 
-	err := s.Server.Listen()
-	if err != nil {
-		xlog.Err(err).Msg("Failed to start server")
-		return err
+	// Start the server
+	if err := s.Server.Listen(); err != nil {
+		return fmt.Errorf("failed to start server: %w", err)
+	}
+
+	// Start the services
+	if err := s.Reload(false); err != nil {
+		return fmt.Errorf("failed to load manifest: %w", err)
 	}
 	return nil
 }
-
 func (s *Session) Close() error {
 	defer s.Cancel()
 	s.ServiceMap.Range(func(name string, sv *ServiceState) bool {
@@ -392,7 +399,7 @@ func (s *Session) Shutdown(ctx context.Context) {
 	}
 }
 
-func Start(manifestPath string) {
+func OpenAndServe(manifestPath string) {
 	xlog.Info().Str("manifest", manifestPath).Str("host", config.Get().Host).Msg("Starting node")
 
 	s, err := New(manifestPath)
@@ -406,12 +413,8 @@ func Start(manifestPath string) {
 		defer cancel()
 		s.Shutdown(ctx)
 	}()
-	if err = s.Open(); err != nil {
-		xlog.Err(err).Msg("Failed to open session")
-		return
-	}
-	if err = s.Reload(false); err != nil {
-		xlog.Err(err).Msg("Failed to load manifest")
+	if err = s.Open(context.Background()); err != nil {
+		xlog.Err(err).Msg("Failed to initialize session")
 		return
 	}
 
@@ -419,4 +422,36 @@ func Start(manifestPath string) {
 	case <-rundown.Signal:
 	case <-s.Context.Done():
 	}
+}
+
+func GetManifestPathFromArgs(args []string) string {
+	// Determine the path user wants to use for the manifest file
+	manifestPath := ""
+	if len(args) != 0 {
+		manifestPath = args[0]
+	}
+
+	// If the path is empty, use the current working directory
+	if manifestPath == "" {
+		manifestPath = "."
+	}
+
+	// If the path is not a valid yml file, try the default names
+	if !strings.HasSuffix(manifestPath, ".yml") || !strings.HasSuffix(manifestPath, ".yaml") {
+		yml := filepath.Join(manifestPath, "pm3.yml")
+		if _, err := os.Stat(yml); err == nil {
+			manifestPath = yml
+		} else {
+			manifestPath = filepath.Join(manifestPath, "pm3.yaml")
+		}
+	}
+	// Clean up the path and make it absolute if possible
+	if abs, err := filepath.Abs(manifestPath); err == nil {
+		manifestPath = abs
+	}
+	return filepath.Clean(manifestPath)
+}
+func Run(args []string) {
+	manifestPath := GetManifestPathFromArgs(args)
+	OpenAndServe(manifestPath)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"get.pme.sh/pmesh/config"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -34,7 +35,11 @@ func RenderErrorLine(err any) string {
 	return errLinePfx + Display(err)
 }
 func ExitWithError(err any) {
-	fmt.Println(RenderErrorLine(err) + "\n")
+	if *config.Dumb {
+		fmt.Fprintf(os.Stderr, "Fatal error: %v", err)
+	} else {
+		fmt.Println(RenderErrorLine(err) + "\n")
+	}
 	os.Exit(1)
 }
 

@@ -1,15 +1,18 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
-	"os"
 
 	"get.pme.sh/pmesh/client"
 	"get.pme.sh/pmesh/config"
 	"get.pme.sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/revision"
+	"get.pme.sh/pmesh/ui"
+
+	"runtime"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/automaxprocs/maxprocs"
 )
 
 var optURL = config.RootCommand.PersistentFlags().StringP(
@@ -48,8 +51,12 @@ func getClientIf() client.Client {
 }
 
 func Execute() {
+	if runtime.GOMAXPROCS(0) > 32 {
+		runtime.GOMAXPROCS(32)
+	}
+	maxprocs.Set()
+	config.RootCommand.Short += ui.FaintStyle.Render(" (" + revision.GetVersion() + ")")
 	if err := config.RootCommand.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		ui.ExitWithError(err)
 	}
 }

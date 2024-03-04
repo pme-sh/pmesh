@@ -170,7 +170,7 @@ func (m *Peerlist) Open(ctx context.Context) error {
 	m.self = self
 	m.last, m.err = m.update(ctx, self)
 	if m.err == nil {
-		ctx, m.cancel = context.WithCancel(ctx)
+		ctx, m.cancel = context.WithCancel(context.Background())
 		go m.tick(ctx, self)
 	}
 	return m.err

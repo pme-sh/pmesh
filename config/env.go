@@ -74,7 +74,7 @@ func (s Subdir) File(name string) string {
 // Global from either environment or command line.
 var RootCommand = &cobra.Command{
 	Use:   "pmesh",
-	Short: "pme.sh is an all-in one service manager, reverse proxy, and enterprise service bus",
+	Short: "pme.sh is an all-in one service manager, reverse proxy, and enterprise service bus.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		if cmd.Flag("cwd").Changed {
 			err = os.Chdir(cmd.Flag("cwd").Value.String())

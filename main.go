@@ -1,17 +1,22 @@
 package main
 
 import (
-	"runtime"
+	"fmt"
+	"os"
+
+	_ "embed"
 
 	"get.pme.sh/pmesh/cmd"
-
-	"go.uber.org/automaxprocs/maxprocs"
+	"get.pme.sh/pmesh/revision"
 )
 
 func main() {
-	if runtime.GOMAXPROCS(0) > 32 {
-		runtime.GOMAXPROCS(32)
+	if len(os.Args) == 2 {
+		switch os.Args[1] {
+		case "--version", "-v", "version", "v", "ver":
+			fmt.Println(revision.GetVersion())
+			os.Exit(0)
+		}
 	}
-	maxprocs.Set()
 	cmd.Execute()
 }
