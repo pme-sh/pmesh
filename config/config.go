@@ -15,6 +15,7 @@ import (
 
 type Config struct {
 	Role       Role                `json:"role"`       // Role of this server
+	Remote     string              `json:"remote"`     // URL of the PNATS/NATS server if we're a regular client
 	Host       string              `json:"host"`       // Hostname of this server
 	Cluster    string              `json:"cluster"`    // Cluster name
 	Secret     string              `json:"secret"`     // Secret key used for all encryption

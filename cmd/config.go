@@ -79,6 +79,7 @@ func init() {
 	strAccessor("secret", func(ss *config.Config) *string { return &ss.Secret })
 	strAccessor("host", func(ss *config.Config) *string { return &ss.Host })
 	strAccessor("cluster", func(ss *config.Config) *string { return &ss.Cluster })
+	strAccessor("remote", func(ss *config.Config) *string { return &ss.Remote })
 	strAccessor("advertised", func(ss *config.Config) *string { return &ss.Advertised })
 
 	// Add the arbitrary PeerUD/LocalUD command

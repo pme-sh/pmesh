@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,8 +36,24 @@ type Gateway struct {
 
 func New() (r *Gateway) {
 	r = &Gateway{}
-	r.Server = lo.Must(autonats.StartServer(autonats.Options{}, config.Get().Topology))
-	r.url = r.Server.ClientURL()
+
+	if config.Get().Role == config.RoleClient {
+		r.url = config.Get().Remote
+	} else {
+		r.Server = lo.Must(autonats.StartServer(autonats.Options{
+			ServerName:  config.Get().Host,
+			ClusterName: config.Get().Cluster,
+			Secret:      config.Get().Secret,
+			Addr:        *config.BindAddr,
+			Port:        *config.InternalPort,
+			LocalAddr:   *config.LocalBindAddr,
+			StoreDir:    config.NatsDir(config.Get().Host),
+			Advertise:   config.Get().Advertised,
+			Topology:    config.Get().Topology,
+		}))
+		r.url = r.Server.ClientURL()
+	}
+
 	os.Setenv("PM3_NATS", r.url)
 	return
 }
@@ -47,7 +64,21 @@ func (r *Gateway) Open(ctx context.Context) (err error) {
 	case <-r.Server.Ready():
 	}
 	r.Client = &Client{}
-	r.Client.Conn, err = r.Server.Connect()
+	if r.Server == nil {
+		if strings.HasPrefix(r.url, "nats://") {
+			r.Client.Conn, err = nats.Connect(r.url)
+		} else {
+			if strings.IndexByte(r.url, ':') == -1 && *config.InternalPort != 8443 {
+				r.url += ":" + strconv.Itoa(*config.InternalPort)
+			}
+			r.Client.Conn, err = autonats.Connect(
+				[]string{r.url},
+				config.Get().Secret,
+			)
+		}
+	} else {
+		r.Client.Conn, err = r.Server.Connect()
+	}
 	if err != nil {
 		return
 	}

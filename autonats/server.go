@@ -136,7 +136,7 @@ func (i natsNetworkIntercept) ListenCause(network, address, cause string) (net.L
 	return tlsmux.Listen(network, address, i.cfg, "nats-"+cause)
 }
 
-func StartServer(opts Options, topology Topology) (srv *Server, err error) {
+func StartServer(opts Options) (srv *Server, err error) {
 	opts.SetDefaults()
 	logger := opts.Logger
 
@@ -148,7 +148,7 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 		Trace:                  false,
 		Debug:                  opts.Debug,
 		TraceVerbose:           opts.Debug,
-		Host:                   opts.Host,
+		Host:                   opts.Addr,
 		Port:                   opts.Port,
 		ClientAdvertise:        opts.Advertise,
 		ServerName:             opts.ServerName,
@@ -159,18 +159,18 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 		JetStreamMaxStore:      -1,
 		Cluster: natssrv.ClusterOpts{
 			Name:      opts.ClusterName,
-			Host:      opts.Host,
+			Host:      opts.Addr,
 			Port:      opts.Port,
 			Advertise: opts.Advertise,
 		},
 		LeafNode: natssrv.LeafNodeOpts{
-			Host:      opts.Host,
+			Host:      opts.Addr,
 			Port:      opts.Port,
 			Advertise: opts.Advertise,
 		},
 		Gateway: natssrv.GatewayOpts{
 			Name:      opts.ClusterName,
-			Host:      opts.Host,
+			Host:      opts.Addr,
 			Port:      opts.Port,
 			Advertise: opts.Advertise,
 		},
@@ -199,7 +199,7 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 
 	if opts.ClusterName == "" {
 		logger.Info().Msg("Starting leaf node")
-		for clusterName, servers := range topology {
+		for clusterName, servers := range opts.Topology {
 			// skip seeding partition.
 			if clusterName == "" {
 				continue
@@ -218,7 +218,7 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 		base.Cluster = natssrv.ClusterOpts{}
 	} else {
 		logger.Info().Msg("Starting cluster node")
-		for clusterName, servers := range topology {
+		for clusterName, servers := range opts.Topology {
 			// skip seeding partition.
 			if clusterName == "" {
 				continue
@@ -277,18 +277,18 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 
 	// Create the local listener, this is completely optional so we will not abort if it fails
 	var localListener net.Listener
-	if opts.LocalPort != -1 && opts.LocalHost != "" {
+	if opts.LocalPort != -1 && opts.LocalAddr != "" {
 		cfg := net.ListenConfig{
 			KeepAlive: -1,
 		}
 		var lnErr error
 		if opts.LocalPort == 0 {
-			localListener, lnErr = cfg.Listen(context.Background(), "tcp", net.JoinHostPort(opts.LocalHost, "4222"))
+			localListener, lnErr = cfg.Listen(context.Background(), "tcp", net.JoinHostPort(opts.LocalAddr, "4222"))
 			if err != nil {
-				localListener, lnErr = cfg.Listen(context.Background(), "tcp", net.JoinHostPort(opts.LocalHost, "0"))
+				localListener, lnErr = cfg.Listen(context.Background(), "tcp", net.JoinHostPort(opts.LocalAddr, "0"))
 			}
 		} else {
-			localListener, lnErr = cfg.Listen(context.Background(), "tcp", net.JoinHostPort(opts.LocalHost, strconv.Itoa(opts.LocalPort)))
+			localListener, lnErr = cfg.Listen(context.Background(), "tcp", net.JoinHostPort(opts.LocalAddr, strconv.Itoa(opts.LocalPort)))
 		}
 		if lnErr != nil {
 			logger.Error().Err(lnErr).Msg("Failed to start local listener")

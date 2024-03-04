@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -69,7 +70,7 @@ func RunSetup(mc *config.Config, interactive bool) error {
 				config.RoleSeed:    "Create a new mesh from scratch",
 				config.RoleNode:    "Full member of a mesh, accepts connections and participates in elections",
 				config.RoleReplica: "Light replica of a mesh, holds a copy of the state to serve locally, but does not participate in elections",
-				config.RoleClient:  "Connects to a mesh and acts as a client",
+				config.RoleClient:  "Connects to a mesh or a regular NATS server and acts as a client",
 			})
 		} else if len(mc.Topology) == 0 {
 			mc.Role = config.RoleSeed
@@ -82,6 +83,33 @@ func RunSetup(mc *config.Config, interactive bool) error {
 	if interactive {
 		mc.Host = ui.PromptString("Server name:", mc.Host, "", validateName(serverNameRunes))
 		mc.Host = strings.ToLower(mc.Host)
+	}
+
+	// If this is a client, ask for a NATS URL and we're done
+	if mc.Role == config.RoleClient {
+		if mc.Remote == "" {
+			mc.Remote = os.Getenv("PM3_NATS")
+			if mc.Remote == "" {
+				mc.Remote = "nats://localhost:4222"
+			}
+		}
+
+		if interactive {
+			mc.Remote = ui.PromptString("NATS URL:", mc.Remote, "", nil)
+		}
+		if strings.HasPrefix(mc.Remote, "pmtp://") {
+			_, secret, err := ParseSeed(mc.Remote)
+			if err != nil {
+				return err
+			}
+			if secret != "" {
+				mc.Secret = secret
+			}
+		}
+		mc.Cluster = ""
+		mc.Topology = nil
+		mc.Advertised = ""
+		return nil
 	}
 
 	// Determine the cluster placement and advertised address
