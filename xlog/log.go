@@ -47,10 +47,13 @@ func SetDefaultOutput(w ...io.Writer) {
 }
 
 func WrapStackError(err error) error {
-	return pkgerr.Wrap(err, "from error")
+	return pkgerr.Wrap(err, "cause")
 }
 func NewStackError(msg string) error {
 	return pkgerr.New(msg)
+}
+func NewStackErrorf(fmt string, args ...any) error {
+	return pkgerr.Errorf(fmt, args...)
 }
 
 // Replaces all defaults.

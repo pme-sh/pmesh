@@ -105,7 +105,7 @@ func (s *Session) Manifest() *Manifest {
 
 func (s *Session) ResolveService(sv string) vhttp.Handler {
 	service, ok := s.ServiceMap.Load(sv)
-	if !ok {
+	if !ok || service.ctx.Err() != nil {
 		return nil
 	}
 	return service
@@ -124,7 +124,6 @@ func New(path string) (s *Session, err error) {
 	// Acquire the lock
 	err = config.TryLock()
 	if err != nil {
-		xlog.Err(err).Msg("Server already running")
 		return
 	}
 	context.AfterFunc(s.Context, config.Unlock)

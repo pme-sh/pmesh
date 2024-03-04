@@ -51,14 +51,6 @@ func (vh *virtualHostGroup) ServeHTTP(w http.ResponseWriter, r *http.Request) Re
 		return Continue
 	}
 
-	if r.URL.Scheme == "http" {
-		if _, ok := r.Header["Upgrade-Insecure-Requests"]; ok {
-			r.URL.Scheme = "https"
-			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
-			return Done
-		}
-	}
-
 	// With each virtual host, try to handle the request.
 	buffer := strings.Builder{}
 	prevHostname := "-"
