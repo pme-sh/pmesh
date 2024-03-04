@@ -36,18 +36,7 @@ func getCallerNameLen(n int) int {
 	return max(min(n, callerMaxW), callerMinW)
 }
 
-type silentConsoleWriter struct {
-	*zerolog.ConsoleWriter
-}
-
-func (w silentConsoleWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err error) {
-	if level <= zerolog.DebugLevel {
-		return len(p), nil
-	}
-	return w.ConsoleWriter.Write(p)
-}
-
-func NewConsoleWriter(f io.Writer) io.Writer {
+func NewConsoleWriter(f io.Writer) LevelWriter {
 	if file, ok := f.(*os.File); ok && term.IsTerminal(int(file.Fd())) && !*config.Dumb {
 		consoleWriter := &zerolog.ConsoleWriter{
 			Out: f,
@@ -108,11 +97,14 @@ func NewConsoleWriter(f io.Writer) io.Writer {
 			},
 		}
 		if !*config.Verbose {
-			return silentConsoleWriter{consoleWriter}
+			return &zerolog.FilteredLevelWriter{
+				Level:  LevelInfo,
+				Writer: zerolog.LevelWriterAdapter{Writer: consoleWriter},
+			}
 		}
-		return consoleWriter
+		return zerolog.LevelWriterAdapter{Writer: consoleWriter}
 	}
-	return f
+	return zerolog.LevelWriterAdapter{Writer: f}
 }
-func StdoutWriter() io.Writer { return NewConsoleWriter(os.Stdout) }
-func StderrWriter() io.Writer { return NewConsoleWriter(os.Stderr) }
+func StdoutWriter() LevelWriter { return NewConsoleWriter(os.Stdout) }
+func StderrWriter() LevelWriter { return NewConsoleWriter(os.Stderr) }

@@ -96,7 +96,7 @@ func NormalizeOrg(k string) string {
 		switch r {
 		case ' ', '-':
 			return '-'
-		case ',', '.', '_':
+		case ',', '.', '_', '"', '\'':
 			return -1
 		}
 

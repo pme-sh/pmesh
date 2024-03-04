@@ -40,6 +40,7 @@ type AppService struct {
 	Build            util.Some[Command] `yaml:"build,omitempty"`             // The command to build the app.
 	Shutdown         util.Some[Command] `yaml:"shutdown,omitempty"`          // The command to shutdown the app.
 	Cluster          string             `yaml:"cluster,omitempty"`           // The number of instances to run.
+	ClusterMin       string             `yaml:"cluster_min,omitempty"`       // The minimum number of instances to run.
 	Env              map[string]string  `yaml:"env,omitempty"`               // The environment variables to set.
 	EnvHost          string             `yaml:"env_host,omitempty"`          // The environment variable for the host.
 	EnvPort          string             `yaml:"env_port,omitempty"`          // The environment variable for the port.
@@ -58,6 +59,7 @@ type AppService struct {
 	UpscalePercent   float64            `yaml:"upscale_percent,omitempty"`   // The percentage of CPU usage to trigger upscale.
 	DownscalePercent float64            `yaml:"downscale_percent,omitempty"` // The percentage of CPU usage to trigger downscale.
 	cluterN          int
+	clusterMin       int
 }
 
 var DefaultRunEnv = map[string]string{
@@ -111,20 +113,29 @@ func (app *AppService) Prepare(opt Options) error {
 	} else if !filepath.IsAbs(app.Root) {
 		app.Root = filepath.Join(opt.ServiceRoot, app.Root)
 	}
-	if app.Cluster == "" {
-		app.cluterN = 1
-	} else if percent, ok := strings.CutSuffix(app.Cluster, "%"); ok {
-		if n, err := strconv.Atoi(percent); err == nil {
-			app.cluterN = (n * cpuhist.NumCPU) / 100
+
+	crange := [2]string{app.Cluster, app.ClusterMin}
+	irange := [2]int{}
+	for i, cluster := range crange {
+		if cluster == "" {
+			irange[i] = 1
+		} else if percent, ok := strings.CutSuffix(cluster, "%"); ok {
+			if n, err := strconv.Atoi(percent); err == nil {
+				irange[i] = (n * cpuhist.NumCPU) / 100
+			} else {
+				return fmt.Errorf("invalid cluster value %q (%w)", cluster, err)
+			}
+		} else if n, err := strconv.Atoi(cluster); err == nil {
+			irange[i] = n
 		} else {
-			return fmt.Errorf("invalid cluster value %q (%w)", app.Cluster, err)
+			return fmt.Errorf("invalid cluster value %q (%w)", cluster, err)
 		}
-	} else if n, err := strconv.Atoi(app.Cluster); err == nil {
-		app.cluterN = n
-	} else {
-		return fmt.Errorf("invalid cluster value %q (%w)", app.Cluster, err)
+		irange[i] = max(irange[i], 1)
 	}
-	app.cluterN = max(app.cluterN, 1)
+	app.cluterN, app.clusterMin = irange[0], irange[1]
+	if app.cluterN < app.clusterMin {
+		app.cluterN = app.clusterMin
+	}
 
 	// We need at least one monitor for startup checks.
 	if len(app.Monitor.Checks) == 0 && !app.Background {
@@ -151,6 +162,8 @@ func (app *AppService) Prepare(opt Options) error {
 				app.DownscalePercent = 0.02
 			}
 		}
+	} else {
+		app.clusterMin = app.cluterN
 	}
 	return nil
 }
@@ -639,6 +652,7 @@ func (run *AppServer) getProcesses() (res []*appProcessState) {
 
 func (run *AppServer) tick(yield func() bool) {
 	upTicks := 0
+tick_loop:
 	for yield() {
 		list := run.getProcesses()
 
@@ -664,6 +678,17 @@ func (run *AppServer) tick(yield func() bool) {
 					proc.logger.Warn().Stringer("max", run.MaxMemory).Stringer("rss", util.Size(mem)).Msg("Memory usage exceeded")
 					proc.tryTerminate(context.Background())
 				}
+			}
+		}
+
+		// If we're below the minimum amount, match it.
+		for count := len(list); count < run.clusterMin; count++ {
+			if err := run.spawnProcess(false); err != nil {
+				run.Logger.Err(err).Msg("Failed to spawn instance")
+				break
+			}
+			if run.SlowStart {
+				continue tick_loop
 			}
 		}
 
@@ -715,8 +740,8 @@ func (run *AppServer) tick(yield func() bool) {
 				continue
 			}
 
-			// If total is above 1, and we're in a down tick, terminate one.
-			if total > 1 && down > neutral && up == 0 {
+			// If total is above min, and we're in a down tick, terminate one.
+			if total > run.clusterMin && down > neutral && up == 0 {
 				for _, proc := range list {
 					if proc.terminating() {
 						continue
@@ -726,18 +751,6 @@ func (run *AppServer) tick(yield func() bool) {
 						proc.tryTerminate(context.Background())
 						break
 					}
-				}
-			}
-		} else {
-			// Otherwise spawn until we match the cluster size.
-			count := len(list)
-			for ; count < run.cluterN; count++ {
-				if err := run.spawnProcess(false); err != nil {
-					run.Logger.Err(err).Msg("Failed to spawn instance")
-					break
-				}
-				if run.SlowStart {
-					break
 				}
 			}
 		}

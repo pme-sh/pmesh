@@ -5,6 +5,7 @@ services:
   api: !Pnpm
     log: session
     cluster: 16
+    cluster_min: 4
     auto_scale: true
     lb:
       strat: round-robin
