@@ -79,5 +79,6 @@ func (i2 *cfList) UnmarshalBinary(data []byte) error {
 		}
 		i2.Add(info, block.Network.IP, block.Network.Limit())
 	}
+	i2.Sort()
 	return nil
 }

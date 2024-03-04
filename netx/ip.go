@@ -46,6 +46,9 @@ type IP struct {
 	High uint64
 }
 
+func IPv4Uint32(a uint32) IP {
+	return IP{Low: 0x0000_ffff_0000_0000 | uint64(a)}
+}
 func IPv4(a, b, c, d byte) IP {
 	lo := 0x0000_ffff_0000_0000 | uint64(a)<<24 | uint64(b)<<16 | uint64(c)<<8 | uint64(d)
 	return IP{Low: lo}
