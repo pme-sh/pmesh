@@ -66,7 +66,10 @@ func GetServerFromContext(ctx context.Context) *Server {
 func (s *Server) ServeHTTPSession(w http.ResponseWriter, r *http.Request, session *ClientSession) {
 	t0 := time.Now()
 	ordered, _ := s.TopLevelMux.getGroups()
-	xlog.DebugC(r.Context()).EmbedObject(xlog.EnhanceRequest(r)).Msg("Request")
+	logger := xlog.Ctx(r.Context())
+	if !session.Local {
+		logger.Debug().EmbedObject(xlog.EnhanceRequest(r)).Msg("Request")
+	}
 
 	// Walk through each group, and try to handle the request.
 	handled := false
@@ -82,7 +85,7 @@ selector:
 			break selector
 		}
 	}
-	xlog.TraceC(r.Context()).Dur("time", time.Since(t0)).Msg("Request timing")
+	logger.Trace().Dur("time", time.Since(t0)).Msg("Request timing")
 
 	// If no match, 404
 	if !handled {

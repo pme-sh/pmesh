@@ -41,11 +41,6 @@ func (h httpEnhancer) MarshalZerologObject(e *Event) {
 	if h.ProtoMajor == 2 {
 		e.RawJSON("h2", j1)
 	}
-
-	// Add context if not already present
-	if e.GetCtx().Value(http.ServerContextKey) == nil {
-		e.Ctx(h.Context())
-	}
 }
 
 func EnhanceRequest(r *http.Request) EventEnhancer {
