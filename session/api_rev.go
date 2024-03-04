@@ -84,4 +84,8 @@ func init() {
 		}
 		return
 	})
+	Match("/version", func(session *Session, r *http.Request, p struct{}) (res string, _ error) {
+		res = revision.GetVersion()
+		return
+	})
 }

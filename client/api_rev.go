@@ -12,3 +12,7 @@ func (c Client) UpdateRepo(p session.UpdateParams) (res session.PullResult, err 
 	err = c.Call("/repo/update", p, &res)
 	return
 }
+func (c Client) GetVersion() (res string, err error) {
+	err = c.Call("/version", nil, &res)
+	return
+}
