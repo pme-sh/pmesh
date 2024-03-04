@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 
 	"get.pme.sh/pmesh/config"
@@ -17,33 +16,6 @@ import (
 )
 
 func init() {
-	getManifestPath := func(args []string) string {
-		// Determine the path user wants to use for the manifest file
-		manifestPath := ""
-		if len(args) != 0 {
-			manifestPath = args[0]
-		}
-
-		// If the path is empty, use the current working directory
-		if manifestPath == "" {
-			manifestPath = "."
-		}
-
-		// If the path is not a valid yml file, try the default names
-		if !strings.HasSuffix(manifestPath, ".yml") || !strings.HasSuffix(manifestPath, ".yaml") {
-			yml := filepath.Join(manifestPath, "pm3.yml")
-			if _, err := os.Stat(yml); err == nil {
-				manifestPath = yml
-			} else {
-				manifestPath = filepath.Join(manifestPath, "pm3.yaml")
-			}
-		}
-		// Clean up the path and make it absolute if possible
-		if abs, err := filepath.Abs(manifestPath); err == nil {
-			manifestPath = abs
-		}
-		return filepath.Clean(manifestPath)
-	}
 	config.RootCommand.AddCommand(&cobra.Command{
 		Use:     "preview [manifest]",
 		Short:   "Previews the rendered manifest",
@@ -51,7 +23,7 @@ func init() {
 		GroupID: refGroup("daemon", "Daemon Commands"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var node *yaml.Node
-			if err := lyml.Load(getManifestPath(args), &node); err != nil {
+			if err := lyml.Load(session.GetManifestPathFromArgs(args), &node); err != nil {
 				return err
 			}
 			buf := &strings.Builder{}
@@ -82,9 +54,8 @@ func init() {
 		Args:    cobra.MaximumNArgs(1),
 		GroupID: refGroup("daemon", "Daemon Commands"),
 		Run: func(cmd *cobra.Command, args []string) {
-			// Validate the options.
 			setuputil.RunSetupIf(true)
-			session.Start(getManifestPath(args))
+			session.Run(args)
 		},
 	})
 

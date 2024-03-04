@@ -2,9 +2,9 @@ builds:
   - id: pmesh
     goos: [windows, linux, darwin]
     goarch: [amd64, arm64]
+    goamd64: [v3]
     env:
       - CGO_ENABLED=0
-      - GOAMD64=v3
 
 archives:
   - format: zip
