@@ -139,10 +139,10 @@ func (app *AppService) Prepare(opt Options) error {
 			app.AutoScale = false
 		} else {
 			if app.UpscalePercent <= 0 {
-				app.UpscalePercent = 100
+				app.UpscalePercent = 0.8
 			}
 			if app.DownscalePercent == 0 {
-				app.DownscalePercent = 5
+				app.DownscalePercent = 0.02
 			}
 		}
 	}

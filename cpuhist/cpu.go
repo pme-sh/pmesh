@@ -18,14 +18,48 @@ const cpuUsageInterval = 5 * time.Second
 var NumCPU = runtime.NumCPU()
 
 func init() {
-	n, _ := cpu.Counts(true)
+	n, _ := cpu.Counts(false)
 	if n != 0 {
 		NumCPU = n
 	}
 }
 
+type times struct {
+	used      float64
+	idle      float64
+	timestamp time.Time
+	isprocess bool
+}
+
+func (from times) getAverageUseBetween(to times) (float64, bool) {
+	if from.timestamp.IsZero() || to.timestamp.IsZero() {
+		return 0, false
+	}
+
+	used := to.used - from.used
+	if used < 0 {
+		return 0, false
+	}
+
+	if !to.isprocess {
+		idle := to.idle - from.idle
+		if idle < 0 {
+			return 0, false
+		}
+		elapsed := used + idle
+		p := used / elapsed
+		p = min(float64(1), max(p, 0.0))
+		return p, true
+	} else {
+		elapsed := to.timestamp.Sub(from.timestamp).Seconds()
+		p := used / elapsed
+		p = min(float64(NumCPU), max(p, 0.0))
+		return p, true
+	}
+}
+
 type processLike interface {
-	times() (*cpu.TimesStat, error)
+	times() times
 	alive() bool
 	creation() time.Time
 	pid() int32
@@ -34,63 +68,48 @@ type realProcess struct {
 	proc *process.Process
 }
 
-func (p realProcess) pid() int32                     { return p.proc.Pid }
-func (p realProcess) times() (*cpu.TimesStat, error) { return p.proc.Times() }
-func (p realProcess) alive() (running bool)          { running, _ = p.proc.IsRunning(); return }
-func (p realProcess) creation() time.Time            { ts, _ := p.proc.CreateTime(); return time.UnixMilli(ts) }
+func (p realProcess) pid() int32            { return p.proc.Pid }
+func (p realProcess) alive() (running bool) { running, _ = p.proc.IsRunning(); return }
+func (p realProcess) creation() time.Time   { ts, _ := p.proc.CreateTime(); return time.UnixMilli(ts) }
+func (p realProcess) times() (r times) {
+	u, err := p.proc.Times()
+	if err != nil {
+		return
+	}
+	r.used = u.User + u.System + u.Iowait + u.Irq + u.Nice + u.Softirq + u.Steal + u.Guest + u.GuestNice
+	r.idle = 0
+	r.timestamp = time.Now()
+	r.isprocess = true
+	return
+}
 
 type systemProcess struct{}
 
 var bootTime, _ = host.BootTime()
 
 func (p systemProcess) pid() int32 { return -1 }
-func (p systemProcess) times() (*cpu.TimesStat, error) {
+func (p systemProcess) times() (r times) {
 	res, err := cpu.Times(false)
 	if err != nil {
-		return nil, err
+		return
 	}
-	for i := 1; i < len(res); i++ {
-		res[0].User += res[i].User
-		res[0].System += res[i].System
-		res[0].Nice += res[i].Nice
-		res[0].Iowait += res[i].Iowait
-		res[0].Irq += res[i].Irq
-		res[0].Softirq += res[i].Softirq
-		res[0].Steal += res[i].Steal
-		res[0].Guest += res[i].Guest
-		res[0].GuestNice += res[i].GuestNice
-		res[0].Idle += res[i].Idle
+	for _, v := range res {
+		r.used += v.User + v.System + v.Iowait + v.Irq + v.Nice + v.Softirq + v.Steal + v.Guest + v.GuestNice
+		r.idle += v.Idle
 	}
-	return &res[0], nil
+	r.timestamp = time.Now()
+	r.isprocess = false
+	return
 }
 func (p systemProcess) alive() bool         { return true }
 func (p systemProcess) creation() time.Time { return time.Unix(int64(bootTime), 0) }
 
-type cpuUsageRecord struct {
-	cpuSeconds float64
-	timestamp  time.Time
-}
-
-func newCpuUsageRecord(p processLike) (r cpuUsageRecord) {
-	if cpu, err := p.times(); err == nil {
-		r.cpuSeconds = cpu.System + cpu.User + cpu.Irq
-	}
-	r.timestamp = time.Now()
-	return
-}
-func (from cpuUsageRecord) getAverageUseBetween(to cpuUsageRecord) float64 {
-	cpuSecElapsed := to.timestamp.Sub(from.timestamp).Seconds()
-	cpuSecUsed := (to.cpuSeconds - from.cpuSeconds)
-	usePercent := cpuSecUsed / cpuSecElapsed
-	usePercent = min(1, max(usePercent, 0))
-	return usePercent * float64(NumCPU)
-}
-
 type cpuUsageHistory struct {
-	lastUse atomic.Int64
-	mu      sync.Mutex
-	proc    processLike
-	r0, r1  cpuUsageRecord
+	lastUse  atomic.Int64
+	mu       sync.Mutex
+	proc     processLike
+	r0, r1   times
+	lastobsv float64
 }
 type uniqueProcessID struct {
 	createtime int64
@@ -110,7 +129,10 @@ func (h *cpuUsageHistory) getAverageUse() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	record := newCpuUsageRecord(h.proc)
+	record := h.proc.times()
+	if record.timestamp.IsZero() {
+		return 0
+	}
 
 	h.lastUse.Store(record.timestamp.UnixNano())
 
@@ -122,7 +144,12 @@ func (h *cpuUsageHistory) getAverageUse() float64 {
 		}
 		h.r1 = record
 	}
-	return h.r0.getAverageUseBetween(record)
+	res, ok := h.r0.getAverageUseBetween(record)
+	if !ok {
+		return h.lastobsv
+	}
+	h.lastobsv = res
+	return res
 }
 
 var cpuUsageHistories = concurrent.Map[uniqueProcessID, *cpuUsageHistory]{}
