@@ -65,24 +65,25 @@ func (err SuppressedHttpError) Error() string {
 	return "suppressed http error"
 }
 
-type bufferType [32 * 1024]byte
+const bufferLen = 32 * 1024
+
 type bufferPool struct {
 	sync.Pool
 }
 
 func (b *bufferPool) Get() []byte {
 	ptr := b.Pool.Get()
-	return (*bufferType)(ptr.(unsafe.Pointer))[:]
+	return unsafe.Slice(ptr.(*byte), bufferLen)
 }
 func (b *bufferPool) Put(buf []byte) {
-	b.Pool.Put(unsafe.Pointer(&buf[0]))
+	b.Pool.Put(&buf[0])
 }
 
 var globalBufferPool = &bufferPool{
 	sync.Pool{
 		New: func() any {
-			buffer := new(bufferType)
-			return unsafe.Pointer(&buffer[0])
+			buf := make([]byte, bufferLen)
+			return &buf[0]
 		},
 	},
 }

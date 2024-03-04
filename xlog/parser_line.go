@@ -2,8 +2,8 @@ package xlog
 
 import (
 	"time"
-	"unsafe"
 
+	"get.pme.sh/pmesh/util"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fastjson"
 )
@@ -23,7 +23,7 @@ func ParseLine(line []byte) (ll Line, err error) {
 
 func (ll Line) Domain() string {
 	sb := ll.GetStringBytes(zerolog.CallerFieldName)
-	return unsafe.String(&sb[0], len(sb))
+	return util.UnsafeString(sb)
 }
 func (ll Line) Time() time.Time {
 	f := ll.GetInt64(zerolog.TimestampFieldName)
@@ -37,7 +37,7 @@ func (ll Line) Level() Level {
 	if level != nil {
 		if level.Type() == fastjson.TypeString {
 			lstr := level.GetStringBytes()
-			if v, ok := unformatLevel[unsafe.String(&lstr[0], len(lstr))]; ok {
+			if v, ok := unformatLevel[util.UnsafeString(lstr)]; ok {
 				return v
 			}
 		} else if level.Type() == fastjson.TypeNumber {

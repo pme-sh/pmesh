@@ -28,10 +28,10 @@ func (r ID) Timestamp() time.Time {
 	return r.ID.Timestamp()
 }
 func (r ID) String() string {
-	buf, _ := r.MarshalText()
-	return util.UnsafeString(buf)
+	arr := r.ToArray()
+	return string(arr[:])
 }
-func (r ID) MarshalText() (text []byte, err error) {
+func (r ID) ToArray() (text [RayLength]byte) {
 	var buf [RayLength]byte
 
 	var sno [8]byte
@@ -42,7 +42,11 @@ func (r ID) MarshalText() (text []byte, err error) {
 	buf[17] = r.Host[0]
 	buf[18] = r.Host[1]
 	buf[19] = r.Host[2]
-	return buf[:], nil
+	return buf
+}
+func (r ID) MarshalText() (text []byte, err error) {
+	arr := r.ToArray()
+	return arr[:], nil
 }
 func (r *ID) UnmarshalText(text []byte) error {
 	if len(text) != RayLength || text[16] != '-' {
@@ -75,5 +79,5 @@ func (r *Generator) Next() string {
 	var sno [8]byte
 	binary.BigEndian.PutUint64(sno[:], uint64(snowflake.New()))
 	hex.Encode(buf[:16], sno[:])
-	return util.UnsafeString(buf[:])
+	return string(buf[:])
 }

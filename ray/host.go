@@ -2,8 +2,6 @@ package ray
 
 import (
 	"fmt"
-
-	"get.pme.sh/pmesh/util"
 )
 
 type Host [3]byte
@@ -18,7 +16,7 @@ func ToHostString(s string) string {
 
 func (p Host) String() string {
 	buf := p.Normal()
-	return util.UnsafeString(buf[:])
+	return string(buf[:])
 }
 func (p Host) Normal() Host {
 	for i, c := range p {
