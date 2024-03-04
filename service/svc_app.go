@@ -53,6 +53,8 @@ type AppService struct {
 	SlowStart        bool               `yaml:"slow_start,omitempty"`        // If true, instances are started one by one.
 	MaxMemory        util.Size          `yaml:"max_memory,omitempty"`        // Maximum amount of memory the process is allowed to use, <= 0 means unlimited.
 	AutoScale        bool               `yaml:"auto_scale,omitempty"`        // If true, the app will be auto-scaled.
+	AutoScaleStreak  int                `yaml:"auto_scale_streak,omitempty"` // The number of consecutive ticks to trigger auto-scaling.
+	AutoScaleDefer   util.Duration      `yaml:"auto_scale_defer,omitempty"`  // The time to wait until considering a process in auto-scaling.
 	UpscalePercent   float64            `yaml:"upscale_percent,omitempty"`   // The percentage of CPU usage to trigger upscale.
 	DownscalePercent float64            `yaml:"downscale_percent,omitempty"` // The percentage of CPU usage to trigger downscale.
 	cluterN          int
@@ -138,6 +140,10 @@ func (app *AppService) Prepare(opt Options) error {
 		if app.cluterN == 1 {
 			app.AutoScale = false
 		} else {
+			app.AutoScaleDefer = app.AutoScaleDefer.Or(30 * time.Second)
+			if app.AutoScaleStreak <= 0 {
+				app.AutoScaleStreak = 30
+			}
 			if app.UpscalePercent <= 0 {
 				app.UpscalePercent = 0.8
 			}
@@ -632,9 +638,6 @@ func (run *AppServer) getProcesses() (res []*appProcessState) {
 }
 
 func (run *AppServer) tick(yield func() bool) {
-	const updownTickThreshold = 5
-	const tickDefer = 10 * time.Second
-
 	upTicks := 0
 	for yield() {
 		list := run.getProcesses()
@@ -675,7 +678,7 @@ func (run *AppServer) tick(yield func() bool) {
 
 				// If process is very recent, skip it.
 				ct, _ := proc.proc.CreateTime()
-				if ct > time.Now().Add(-tickDefer).UnixMilli() {
+				if ct > time.Now().Add(-run.AutoScaleDefer.Duration()).UnixMilli() {
 					neutral++
 					continue
 				}
@@ -704,7 +707,7 @@ func (run *AppServer) tick(yield func() bool) {
 
 			// If upticks reached the threshold and we have less than N instances, spawn one.
 			total := up + down + neutral
-			if upTicks >= updownTickThreshold && total < run.cluterN {
+			if upTicks >= run.AutoScaleStreak && total < run.cluterN {
 				run.Logger.Info().Int("total", total).Int("up", up).Int("down", down).Int("neutral", neutral).Floats64("usage", usageList).Msg("Auto-scaling up")
 				if err := run.spawnProcess(false); err != nil {
 					run.Logger.Err(err).Msg("Failed to spawn instance")
@@ -718,7 +721,7 @@ func (run *AppServer) tick(yield func() bool) {
 					if proc.terminating() {
 						continue
 					}
-					if proc.downTicks >= updownTickThreshold {
+					if proc.downTicks >= int32(run.AutoScaleStreak) {
 						run.Logger.Info().Int("total", total).Int("up", up).Int("down", down).Int("neutral", neutral).Floats64("usage", usageList).Msg("Auto-scaling down")
 						proc.tryTerminate(context.Background())
 						break
