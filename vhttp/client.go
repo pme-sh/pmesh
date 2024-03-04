@@ -325,6 +325,7 @@ func StartClientRequest(r *http.Request, infoProvider netx.IPInfoProvider) (rctx
 	} else {
 		delete(rctx.Header, "P-Internal")
 	}
+	delete(rctx.Header, "P-Portal")
 	return
 }
 

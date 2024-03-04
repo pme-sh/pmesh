@@ -67,7 +67,8 @@ func (s *Server) ServeHTTPSession(w http.ResponseWriter, r *http.Request, sessio
 	t0 := time.Now()
 	ordered, _ := s.TopLevelMux.getGroups()
 	logger := xlog.Ctx(r.Context())
-	if !session.Local {
+	isPortal := len(r.Header["P-Portal"]) != 0
+	if !session.Local && !isPortal {
 		logger.Debug().EmbedObject(xlog.EnhanceRequest(r)).Msg("Request")
 	}
 

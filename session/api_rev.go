@@ -16,9 +16,8 @@ type RepoInfo struct {
 	URL    string             `json:"url"`    // Remote repository URL
 }
 type PullResult struct {
-	From    revision.Reference `json:"from"`    // From reference
-	To      revision.Reference `json:"to"`      // To reference
-	Changed bool               `json:"changed"` // True if the repository was changed
+	From revision.Reference `json:"from"` // From reference
+	To   revision.Reference `json:"to"`   // To reference
 }
 type UpdateParams struct {
 	Invalidate bool `json:"invalidate"` // True if the session should be invalidated

@@ -366,11 +366,13 @@ func StartServer(opts Options) (srv *Server, err error) {
 			jsc, err := jetstream.New(conn)
 			if err != nil {
 				logger.Info().Err(err).Msg("Init: Waiting for Jetstream to become ready")
+				time.Sleep(1 * time.Second)
 				continue
 			}
 			_, err = jsc.AccountInfo(context.Background())
 			if err != nil {
 				logger.Info().Err(err).Msg("Init: Waiting for Jetstream to become ready")
+				time.Sleep(1 * time.Second)
 				continue
 			}
 

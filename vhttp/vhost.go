@@ -54,9 +54,10 @@ func (vh *virtualHostGroup) ServeHTTP(w http.ResponseWriter, r *http.Request) Re
 	// With each virtual host, try to handle the request.
 	buffer := strings.Builder{}
 	prevHostname := "-"
+	isPortal := len(r.Header["P-Portal"]) != 0
 	for _, host := range vh.hosts {
 		// If HTTP request & user wants to upgrade to HTTPS, redirect.
-		if r.URL.Scheme == "http" && !host.NoUpgrade {
+		if !isPortal && r.URL.Scheme == "http" && !host.NoUpgrade {
 			if _, ok := r.Header["Upgrade-Insecure-Requests"]; ok {
 				r.URL.Scheme = "https"
 				http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
