@@ -9,6 +9,7 @@ archives:
   - format: zip
     id: pmesh
     builds: [pmesh]
+    name_template: "pmesh_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   algorithm: sha256
