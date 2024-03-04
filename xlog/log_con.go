@@ -36,9 +36,20 @@ func getCallerNameLen(n int) int {
 	return max(min(n, callerMaxW), callerMinW)
 }
 
+type silentConsoleWriter struct {
+	*zerolog.ConsoleWriter
+}
+
+func (w silentConsoleWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err error) {
+	if level <= zerolog.DebugLevel {
+		return len(p), nil
+	}
+	return w.ConsoleWriter.Write(p)
+}
+
 func NewConsoleWriter(f io.Writer) io.Writer {
 	if file, ok := f.(*os.File); ok && term.IsTerminal(int(file.Fd())) && !*config.Dumb {
-		return &zerolog.ConsoleWriter{
+		consoleWriter := &zerolog.ConsoleWriter{
 			Out: f,
 			FormatTimestamp: func(i any) string {
 				ms, _ := i.(json.Number)
@@ -96,6 +107,10 @@ func NewConsoleWriter(f io.Writer) io.Writer {
 				return fmt.Sprintf("│ \x1b[1m%s\x1b[0m", n)
 			},
 		}
+		if !*config.Verbose {
+			return silentConsoleWriter{consoleWriter}
+		}
+		return consoleWriter
 	}
 	return f
 }
