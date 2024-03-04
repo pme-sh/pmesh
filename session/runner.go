@@ -190,7 +190,7 @@ func (t *Runner) ServeMsg(ctx context.Context, subject string, data []byte, meta
 	defer func() {
 		if paniced {
 			e := xlog.NewStackErrorf("panic while serving task: %v", recover())
-			schedulerLogger.Err(e).Stack().Send()
+			schedulerLogger.Error().Stack().Err(e).Send()
 		}
 	}()
 

@@ -109,7 +109,7 @@ func ErrStack(err any) *Event {
 		} else {
 			e = WrapStackError(e)
 		}
-		return log.Logger.Err(e).Stack()
+		return log.Logger.Error().Stack().Err(e)
 	}
 	return log.Logger.Info()
 }
@@ -121,7 +121,7 @@ func ErrStackC(ctx context.Context, err any) *Event {
 		} else {
 			e = WrapStackError(e)
 		}
-		return Ctx(ctx).Err(e).Stack()
+		return Ctx(ctx).Error().Stack().Err(e)
 	}
 	return Ctx(ctx).Info()
 }

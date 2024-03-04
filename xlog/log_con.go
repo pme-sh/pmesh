@@ -1,6 +1,7 @@
 package xlog
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"get.pme.sh/pmesh/config"
 	"github.com/rs/zerolog"
+	"golang.org/x/term"
 )
 
 var callerMaxWSeen atomic.Int32
@@ -34,39 +37,67 @@ func getCallerNameLen(n int) int {
 }
 
 func NewConsoleWriter(f io.Writer) io.Writer {
-	// file, ok := f.(*os.File); ok && term.IsTerminal(int(file.Fd())) && !*config.Dumb
-	return &zerolog.ConsoleWriter{
-		Out: f,
-		FormatTimestamp: func(i any) string {
-			ms, _ := i.(json.Number)
-			msi, _ := ms.Int64()
-			if msi == 0 {
-				return ""
-			}
-			ts := time.UnixMilli(msi)
-			if now := time.Now(); ts.Year() != now.Year() {
-				return ts.Format("2006-01-02 15:04:05")
-			} else if ts.YearDay() != now.YearDay() {
-				return ts.Format("01-02 15:04:05")
-			} else {
-				return ts.Format(time.Kitchen)
-			}
-		},
-		FormatCaller: func(i any) string {
-			n, ok := i.(string)
-			if !ok {
-				return ""
-			}
+	if file, ok := f.(*os.File); ok && term.IsTerminal(int(file.Fd())) && !*config.Dumb {
+		return &zerolog.ConsoleWriter{
+			Out: f,
+			FormatTimestamp: func(i any) string {
+				ms, _ := i.(json.Number)
+				msi, _ := ms.Int64()
+				if msi == 0 {
+					return ""
+				}
+				ts := time.UnixMilli(msi)
+				if now := time.Now(); ts.Year() != now.Year() {
+					return ts.Format("2006-01-02 15:04:05")
+				} else if ts.YearDay() != now.YearDay() {
+					return ts.Format("01-02 15:04:05")
+				} else {
+					return ts.Format(time.Kitchen)
+				}
+			},
+			FieldsExclude: []string{zerolog.ErrorStackFieldName},
+			FormatExtra: func(m map[string]interface{}, b *bytes.Buffer) error {
+				started := false
+				if stack, ok := m[zerolog.ErrorStackFieldName]; ok {
+					if arr, ok := stack.([]any); ok {
+						for _, i := range arr {
+							if data, ok := i.(map[string]any); ok {
+								if !started {
+									b.WriteString("\n│ \x1b[1mStack\x1b[0m\n")
+									started = true
+								}
+								funcn, _ := data["func"].(string)
+								line, _ := data["line"].(string)
+								source, _ := data["source"].(string)
+								source += ":" + line
 
-			preferw := getCallerNameLen(len(n))
-			if x := preferw - len(n); x < 0 {
-				n = n[:preferw-1] + "…"
-			} else {
-				n += strings.Repeat(" ", x)
-			}
-			return fmt.Sprintf("│ \x1b[1m%s\x1b[0m", n)
-		},
+								if len(source) < 24 {
+									source += strings.Repeat(" ", 24-len(source))
+								}
+								b.WriteString(fmt.Sprintf("│ %s \x1b[1m%s()\x1b[0m\n", source, funcn))
+							}
+						}
+					}
+				}
+				return nil
+			},
+			FormatCaller: func(i any) string {
+				n, ok := i.(string)
+				if !ok {
+					return ""
+				}
+
+				preferw := getCallerNameLen(len(n))
+				if x := preferw - len(n); x < 0 {
+					n = n[:preferw-1] + "…"
+				} else {
+					n += strings.Repeat(" ", x)
+				}
+				return fmt.Sprintf("│ \x1b[1m%s\x1b[0m", n)
+			},
+		}
 	}
+	return f
 }
 func StdoutWriter() io.Writer { return NewConsoleWriter(os.Stdout) }
 func StderrWriter() io.Writer { return NewConsoleWriter(os.Stderr) }
