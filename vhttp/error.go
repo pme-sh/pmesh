@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/ray"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/ray"
+	"get.pme.sh/pmesh/util"
 )
 
 const (

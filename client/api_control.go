@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/pme-sh/pmesh/session"
-	"github.com/pme-sh/pmesh/xpost"
+	"get.pme.sh/pmesh/session"
+	"get.pme.sh/pmesh/xpost"
 
 	"github.com/nats-io/nats.go/jetstream"
 )

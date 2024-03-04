@@ -10,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/gorilla/websocket"
 )

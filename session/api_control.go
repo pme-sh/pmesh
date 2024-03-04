@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pme-sh/pmesh/enats"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xpost"
+	"get.pme.sh/pmesh/enats"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xpost"
 
 	"github.com/nats-io/nats.go/jetstream"
 )

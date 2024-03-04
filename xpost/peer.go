@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/geo"
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/pmtp"
-	"github.com/pme-sh/pmesh/security"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/geo"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/security"
 )
 
 type Peer struct {

@@ -3,7 +3,7 @@ package retry
 import (
 	"time"
 
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/util"
 )
 
 type Policy struct {

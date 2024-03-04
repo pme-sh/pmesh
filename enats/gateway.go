@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/autonats"
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/autonats"
+	"get.pme.sh/pmesh/config"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"

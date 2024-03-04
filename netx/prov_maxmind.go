@@ -8,8 +8,8 @@ import (
 	"io"
 	"path"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/xlog"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pme-sh/pmesh/ray"
+	"get.pme.sh/pmesh/ray"
 
 	"github.com/valyala/fastjson"
 )

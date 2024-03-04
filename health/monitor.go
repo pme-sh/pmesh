@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/util"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/util"
+	"get.pme.sh/pmesh/xlog"
 )
 
 type MonitorLoop struct {

@@ -8,9 +8,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/pme-sh/pmesh/retry"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/retry"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/samber/lo"
 )

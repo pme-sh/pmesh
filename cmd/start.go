@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/lyml"
-	"github.com/pme-sh/pmesh/service"
-	"github.com/pme-sh/pmesh/session"
-	"github.com/pme-sh/pmesh/setuputil"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/lyml"
+	"get.pme.sh/pmesh/service"
+	"get.pme.sh/pmesh/session"
+	"get.pme.sh/pmesh/setuputil"
 
 	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/spf13/cobra"

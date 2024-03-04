@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pme-sh/pmesh/concurrent"
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/concurrent"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/xlog"
 )
 
 var certCache = concurrent.Map[string, *Certificate]{}

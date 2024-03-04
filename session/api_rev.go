@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pme-sh/pmesh/revision"
+	"get.pme.sh/pmesh/revision"
 )
 
 type RepoInfo struct {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/samber/lo"
 )

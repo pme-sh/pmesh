@@ -1,6 +1,6 @@
 package autonats
 
-import "github.com/pme-sh/pmesh/xlog"
+import "get.pme.sh/pmesh/xlog"
 
 type Logger struct {
 	*xlog.Logger

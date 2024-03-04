@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/util"
 )
 
 type Upstream struct {

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pme-sh/pmesh/glob"
-	"github.com/pme-sh/pmesh/snowflake"
+	"get.pme.sh/pmesh/glob"
+	"get.pme.sh/pmesh/snowflake"
 )
 
 const (

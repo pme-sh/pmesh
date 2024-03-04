@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/ray"
+	"get.pme.sh/pmesh/ray"
 
 	"golang.org/x/sync/errgroup"
 )

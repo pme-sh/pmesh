@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/pme-sh/pmesh/client"
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/client"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/pmtp"
 
 	"github.com/spf13/cobra"
 )

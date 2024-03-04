@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
-	"github.com/pme-sh/pmesh/lb"
-	"github.com/pme-sh/pmesh/variant"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/lb"
+	"get.pme.sh/pmesh/variant"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 
 	"gopkg.in/yaml.v3"
 )

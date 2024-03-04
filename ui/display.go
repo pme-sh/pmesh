@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/util"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"

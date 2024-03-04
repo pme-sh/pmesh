@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/util"
-	"github.com/pme-sh/pmesh/variant"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/util"
+	"get.pme.sh/pmesh/variant"
+	"get.pme.sh/pmesh/xlog"
 )
 
 func makeParser(ty reflect.Type) func(string) (reflect.Value, error) {

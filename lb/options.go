@@ -1,10 +1,10 @@
 package lb
 
 import (
-	"github.com/pme-sh/pmesh/rate"
-	"github.com/pme-sh/pmesh/retry"
-	"github.com/pme-sh/pmesh/util"
-	"github.com/pme-sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/rate"
+	"get.pme.sh/pmesh/retry"
+	"get.pme.sh/pmesh/util"
+	"get.pme.sh/pmesh/vhttp"
 )
 
 type Strategy uint8

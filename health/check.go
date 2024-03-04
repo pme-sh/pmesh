@@ -3,7 +3,7 @@ package health
 import (
 	"context"
 
-	"github.com/pme-sh/pmesh/variant"
+	"get.pme.sh/pmesh/variant"
 
 	"gopkg.in/yaml.v3"
 )

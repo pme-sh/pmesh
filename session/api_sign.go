@@ -3,7 +3,7 @@ package session
 import (
 	"net/http"
 
-	"github.com/pme-sh/pmesh/urlsigner"
+	"get.pme.sh/pmesh/urlsigner"
 )
 
 func init() {

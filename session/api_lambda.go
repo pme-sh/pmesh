@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pme-sh/pmesh/concurrent"
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/pmtp"
-	"github.com/pme-sh/pmesh/snowflake"
-	"github.com/pme-sh/pmesh/xlog"
-	"github.com/pme-sh/pmesh/xpost"
+	"get.pme.sh/pmesh/concurrent"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/snowflake"
+	"get.pme.sh/pmesh/xlog"
+	"get.pme.sh/pmesh/xpost"
 )
 
 type LambdaID struct {

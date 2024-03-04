@@ -11,10 +11,10 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/cpuhist"
-	"github.com/pme-sh/pmesh/luae"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/cpuhist"
+	"get.pme.sh/pmesh/luae"
+	"get.pme.sh/pmesh/util"
 
 	"github.com/samber/lo"
 	lua "github.com/yuin/gopher-lua"

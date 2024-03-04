@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 
 	"github.com/samber/lo"
 	"github.com/shirou/gopsutil/v3/process"

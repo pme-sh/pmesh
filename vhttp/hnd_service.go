@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/enats"
-	"github.com/pme-sh/pmesh/ray"
-	"github.com/pme-sh/pmesh/variant"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/enats"
+	"get.pme.sh/pmesh/ray"
+	"get.pme.sh/pmesh/variant"
+	"get.pme.sh/pmesh/xlog"
 )
 
 type StateResolver interface {

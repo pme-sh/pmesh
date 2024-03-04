@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/pme-sh/pmesh/lb"
-	"github.com/pme-sh/pmesh/service"
-	"github.com/pme-sh/pmesh/snowflake"
+	"get.pme.sh/pmesh/lb"
+	"get.pme.sh/pmesh/service"
+	"get.pme.sh/pmesh/snowflake"
 )
 
 type ServiceHealth struct {

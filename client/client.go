@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/pme-sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/pmtp"
 )
 
 type Client struct {

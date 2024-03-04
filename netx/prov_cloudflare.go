@@ -5,7 +5,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 )
 
 const (

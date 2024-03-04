@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 
 	"encoding/json"
 
-	"github.com/pme-sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/pmtp"
 
 	"github.com/gorilla/schema"
 )

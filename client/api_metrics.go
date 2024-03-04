@@ -1,6 +1,6 @@
 package client
 
-import "github.com/pme-sh/pmesh/session"
+import "get.pme.sh/pmesh/session"
 
 func (c Client) SystemMetrics() (m session.SystemMetrics, err error) {
 	err = c.Call("/system", nil, &m)

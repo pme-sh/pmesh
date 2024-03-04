@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pme-sh/pmesh/snowflake"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/snowflake"
+	"get.pme.sh/pmesh/util"
 )
 
 type ID struct {

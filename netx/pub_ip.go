@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 
 	"github.com/samber/lo"
 )

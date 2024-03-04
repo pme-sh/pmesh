@@ -8,12 +8,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pme-sh/pmesh/hosts"
-	"github.com/pme-sh/pmesh/lyml"
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/service"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/hosts"
+	"get.pme.sh/pmesh/lyml"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/service"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"

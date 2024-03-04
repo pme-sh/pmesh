@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 
-	"github.com/pme-sh/pmesh/session"
+	"get.pme.sh/pmesh/session"
 )
 
 func (c Client) KV(key string) (res session.KVState, err error) {

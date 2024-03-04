@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/util"
 
 	"github.com/samber/lo"
 )

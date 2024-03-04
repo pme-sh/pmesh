@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/gorilla/websocket"
 )

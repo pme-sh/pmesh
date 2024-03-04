@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/xlog"
 
 	atomicfile "github.com/natefinch/atomic"
 )

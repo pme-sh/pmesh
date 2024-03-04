@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/xlog"
 )
 
 func init() {

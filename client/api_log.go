@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pme-sh/pmesh/pmtp"
-	"github.com/pme-sh/pmesh/ray"
-	"github.com/pme-sh/pmesh/xlog"
-	"github.com/pme-sh/pmesh/xpost"
+	"get.pme.sh/pmesh/pmtp"
+	"get.pme.sh/pmesh/ray"
+	"get.pme.sh/pmesh/xlog"
+	"get.pme.sh/pmesh/xpost"
 
 	"github.com/samber/lo"
 )

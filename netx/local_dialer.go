@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/subnet"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/subnet"
+	"get.pme.sh/pmesh/xlog"
 
 	"golang.org/x/net/http2"
 )

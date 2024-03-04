@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/ui"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/ui"
 
 	"github.com/spf13/cobra"
 )

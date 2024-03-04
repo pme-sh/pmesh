@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pme-sh/pmesh/npm"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/npm"
+	"get.pme.sh/pmesh/util"
 )
 
 type JsApp struct {

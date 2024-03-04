@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xpost"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xpost"
 
 	"github.com/samber/lo"
 	"github.com/shirou/gopsutil/v3/cpu"

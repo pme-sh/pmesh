@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pme-sh/pmesh/health"
-	"github.com/pme-sh/pmesh/lb"
-	"github.com/pme-sh/pmesh/util"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/health"
+	"get.pme.sh/pmesh/lb"
+	"get.pme.sh/pmesh/util"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 )
 
 type ProxyService struct {

@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/util"
 
 	"github.com/samber/lo"
 	"github.com/shirou/gopsutil/v3/host"

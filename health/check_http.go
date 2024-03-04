@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/netx"
+	"get.pme.sh/pmesh/netx"
 )
 
 type HttpCheck struct {

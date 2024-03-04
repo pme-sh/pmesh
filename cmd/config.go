@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"

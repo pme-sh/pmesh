@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/setuputil"
-	"github.com/pme-sh/pmesh/ui"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/setuputil"
+	"get.pme.sh/pmesh/ui"
 
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"

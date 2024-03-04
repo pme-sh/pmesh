@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pme-sh/pmesh/luae"
+	"get.pme.sh/pmesh/luae"
 
 	"github.com/samber/lo"
 	lua "github.com/yuin/gopher-lua"

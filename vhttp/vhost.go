@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/hosts"
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/security"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/hosts"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/security"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/samber/lo"
 )

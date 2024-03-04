@@ -5,8 +5,8 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/pme-sh/pmesh/textproc"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/textproc"
+	"get.pme.sh/pmesh/util"
 
 	slogzerolog "github.com/samber/slog-zerolog/v2"
 )

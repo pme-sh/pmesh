@@ -9,7 +9,7 @@ import (
 	"net/netip"
 	"strconv"
 
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/util"
 )
 
 // Well-known addresses

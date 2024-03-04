@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/netx"
-	"github.com/pme-sh/pmesh/security"
-	"github.com/pme-sh/pmesh/tlsmux"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/netx"
+	"get.pme.sh/pmesh/security"
+	"get.pme.sh/pmesh/tlsmux"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/nats-io/nats.go"
 	"github.com/samber/lo"

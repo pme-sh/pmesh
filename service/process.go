@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/cpuhist"
+	"get.pme.sh/pmesh/cpuhist"
 
 	"github.com/google/shlex"
 	"github.com/shirou/gopsutil/v3/process"

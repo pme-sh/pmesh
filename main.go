@@ -3,7 +3,7 @@ package main
 import (
 	"runtime"
 
-	"github.com/pme-sh/pmesh/cmd"
+	"get.pme.sh/pmesh/cmd"
 
 	"go.uber.org/automaxprocs/maxprocs"
 )

@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/xlog"
 )
 
 var AnyCastMachineID = config.MachineID(0)

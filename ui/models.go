@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/client"
-	"github.com/pme-sh/pmesh/session"
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/client"
+	"get.pme.sh/pmesh/session"
+	"get.pme.sh/pmesh/util"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"

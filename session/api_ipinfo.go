@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/pme-sh/pmesh/netx"
+	"get.pme.sh/pmesh/netx"
 )
 
 type IPInfoResult struct {

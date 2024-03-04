@@ -3,7 +3,7 @@ package ray
 import (
 	"fmt"
 
-	"github.com/pme-sh/pmesh/util"
+	"get.pme.sh/pmesh/util"
 )
 
 type Host [3]byte

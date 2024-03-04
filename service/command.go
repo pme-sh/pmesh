@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 
 	"github.com/google/shlex"
 	"github.com/samber/lo"

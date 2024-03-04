@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/tlsmux"
+	"get.pme.sh/pmesh/tlsmux"
 
-	natssrv "github.com/nats-io/nats-server/v2/server"
+	natssrv "get.pme.sh/pnats/server"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"

@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/pme-sh/pmesh/session"
-	"github.com/pme-sh/pmesh/snowflake"
+	"get.pme.sh/pmesh/session"
+	"get.pme.sh/pmesh/snowflake"
 )
 
 func (c Client) ServiceHealth(name string) (h session.ServiceHealth, err error) {

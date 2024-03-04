@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/pme-sh/pmesh/glob/gocodewalker"
+	"get.pme.sh/pmesh/glob/gocodewalker"
 )
 
 type File = gocodewalker.File

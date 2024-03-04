@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/enats"
-	"github.com/pme-sh/pmesh/rate"
-	"github.com/pme-sh/pmesh/retry"
-	"github.com/pme-sh/pmesh/util"
-	"github.com/pme-sh/pmesh/vhttp"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/enats"
+	"get.pme.sh/pmesh/rate"
+	"get.pme.sh/pmesh/retry"
+	"get.pme.sh/pmesh/util"
+	"get.pme.sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"

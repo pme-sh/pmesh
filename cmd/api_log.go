@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/rundown"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/rundown"
+	"get.pme.sh/pmesh/xlog"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

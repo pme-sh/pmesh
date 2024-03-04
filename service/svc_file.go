@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pme-sh/pmesh/vhttp"
+	"get.pme.sh/pmesh/vhttp"
 
 	"github.com/andybalholm/brotli"
 )

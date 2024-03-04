@@ -12,9 +12,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/lru"
-	"github.com/pme-sh/pmesh/security"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/lru"
+	"get.pme.sh/pmesh/security"
 
 	"github.com/gorilla/websocket"
 )

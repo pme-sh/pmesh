@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 )
 
 const (

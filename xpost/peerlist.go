@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pme-sh/pmesh/enats"
-	"github.com/pme-sh/pmesh/hosts"
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/enats"
+	"get.pme.sh/pmesh/hosts"
+	"get.pme.sh/pmesh/xlog"
 )
 
 // System data source

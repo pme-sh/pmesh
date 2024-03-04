@@ -3,8 +3,8 @@ package service
 import (
 	"sync"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/subnet"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/subnet"
 )
 
 var SubnetAllocator = sync.OnceValue(func() *subnet.Allocator {

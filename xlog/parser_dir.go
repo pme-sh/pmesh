@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
+	"get.pme.sh/pmesh/config"
 )
 
 type FileKind uint8

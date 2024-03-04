@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/pme-sh/pmesh/session"
+	"get.pme.sh/pmesh/session"
 )
 
 func (c Client) Lambdas() (res map[string]session.Lambda, err error) {

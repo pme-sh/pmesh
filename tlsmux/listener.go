@@ -8,7 +8,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/pme-sh/pmesh/xlog"
+	"get.pme.sh/pmesh/xlog"
 )
 
 var ErrListenerClosed = errors.New("listener closed")

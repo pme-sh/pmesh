@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pme-sh/pmesh/rate"
-	"github.com/pme-sh/pmesh/variant"
+	"get.pme.sh/pmesh/rate"
+	"get.pme.sh/pmesh/variant"
 )
 
 type RateLimitHandler struct {

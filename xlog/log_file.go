@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pme-sh/pmesh/config"
-	"github.com/pme-sh/pmesh/lru"
+	"get.pme.sh/pmesh/config"
+	"get.pme.sh/pmesh/lru"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 )

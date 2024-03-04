@@ -3,7 +3,7 @@ package lyml
 import (
 	"strings"
 
-	"github.com/pme-sh/pmesh/luae"
+	"get.pme.sh/pmesh/luae"
 
 	lua "github.com/yuin/gopher-lua"
 )
