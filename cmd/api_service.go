@@ -15,7 +15,7 @@ func init() {
 		Aliases: []string{"list"},
 		Short:   "List services",
 		Args:    cobra.NoArgs,
-		GroupID: refGroup("ctrl", "Service Controls"),
+		GroupID: refGroup("ctrl", "Service"),
 		Run: func(cmd *cobra.Command, args []string) {
 			ui.Run(ui.MakeServiceListModel(getClient()))
 		},
@@ -25,7 +25,7 @@ func init() {
 		Short:   "Show service details",
 		Aliases: []string{"inspect", "info", "show"},
 		Args:    cobra.MaximumNArgs(1),
-		GroupID: refGroup("ctrl", "Service Controls"),
+		GroupID: refGroup("ctrl", "Service"),
 		Run: func(cmd *cobra.Command, args []string) {
 			cli := getClient()
 			var svc string
@@ -46,7 +46,7 @@ func init() {
 			Short:   cmd.Short,
 			Aliases: cmd.Aliases,
 			Args:    cobra.MaximumNArgs(1),
-			GroupID: refGroup("ctrl", "Service Controls"),
+			GroupID: refGroup("ctrl", "Service"),
 			Run: func(_ *cobra.Command, args []string) {
 				cli := getClient()
 				var svc string
@@ -63,9 +63,4 @@ func init() {
 			},
 		})
 	}
-
-	//ui.SpinnyWait("hi", func() (struct{}, error) {
-	//	time.Sleep(2 * time.Second)
-	//	return struct{}{}, nil
-	//})
 }

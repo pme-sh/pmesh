@@ -18,12 +18,12 @@ func init() {
 	getCmd := &cobra.Command{
 		Use:     "get",
 		Short:   "Get the pmesh node configuration",
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("cfg", "Configuration"),
 	}
 	setCmd := &cobra.Command{
 		Use:     "set",
 		Short:   "Set the pmesh node configuration",
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("cfg", "Configuration"),
 	}
 	dumpCmd := &cobra.Command{
 		Use:   "all",

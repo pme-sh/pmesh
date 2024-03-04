@@ -20,7 +20,7 @@ func init() {
 		Use:     "preview [manifest]",
 		Short:   "Previews the rendered manifest",
 		Args:    cobra.MaximumNArgs(1),
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("daemon", "Daemon"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var node *yaml.Node
 			if err := lyml.Load(session.GetManifestPathFromArgs(args), &node); err != nil {
@@ -50,9 +50,9 @@ func init() {
 
 	config.RootCommand.AddCommand(&cobra.Command{
 		Use:     "go [manifest]",
-		Short:   "Start the pmesh node, optionally with a manifest file",
+		Short:   "Start the pmesh node with a manifest file",
 		Args:    cobra.MaximumNArgs(1),
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("daemon", "Daemon"),
 		Run: func(cmd *cobra.Command, args []string) {
 			setuputil.RunSetupIf(true)
 			session.Run(args)
@@ -64,7 +64,7 @@ func init() {
 		Hidden:  true,
 		Short:   "Kill all processes started by pmesh",
 		Args:    cobra.MaximumNArgs(1),
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("daemon", "Daemon"),
 		Run: func(cmd *cobra.Command, args []string) {
 			service.KillOrphans()
 		},

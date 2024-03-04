@@ -68,7 +68,7 @@ var tailCmd = &cobra.Command{
 	Use:     "tail",
 	Short:   "Tail logs",
 	Args:    cobra.NoArgs,
-	GroupID: refGroup("log", "Log Queries"),
+	GroupID: refGroup("log", "Logs"),
 }
 var raytraceCmd = &cobra.Command{
 	Use:     "raytrace [ray]",

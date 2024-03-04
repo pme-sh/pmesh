@@ -54,24 +54,30 @@ go install get.pme.sh/pmesh@latest
 Usage:
   pmesh [command]
 
-Log Queries:
+Logs:
   raytrace    Find logs by ray ID
   tail        Tail logs
 
-Service Controls:
+Management:
+  reload      Reloads the manifest, restarts all services
+  shutdown    Shuts down the pmesh node
+
+Service:
   ls          List services
   rebuild     Invalidates build cache and restarts service
   restart     Restart service
   stop        Stops service
   view        Show service details
 
-Daemon Commands:
+Configuration:
   get         Get the pmesh node configuration
   get-seed    Get the seed URL
-  go          Start the pmesh node, optionally with a manifest file
-  preview     Previews the rendered manifest
   set         Set the pmesh node configuration
   setup       Run the setup utility
+
+Daemon:
+  go          Start the pmesh node with a manifest file
+  preview     Previews the rendered manifest
 
 Additional Commands:
   completion  Generate the autocompletion script for the specified shell

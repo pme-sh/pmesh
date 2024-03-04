@@ -29,7 +29,7 @@ func init() {
 		Use:     "get-seed",
 		Short:   "Get the seed URL",
 		Args:    cobra.NoArgs,
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("cfg", "Configuration"),
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg := config.Get()
 			if cfg.Role == config.RoleNotSet {
@@ -66,7 +66,7 @@ func init() {
 	setupCmd := &cobra.Command{
 		Use:     "setup",
 		Short:   "Run the setup utility",
-		GroupID: refGroup("daemon", "Daemon Commands"),
+		GroupID: refGroup("cfg", "Configuration"),
 		Run: runsetup(func(c *config.Config, s []string) error {
 			c.Role = config.RoleNotSet
 			return nil

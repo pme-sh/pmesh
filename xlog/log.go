@@ -47,7 +47,7 @@ func SetDefaultOutput(w ...io.Writer) {
 }
 
 func WrapStackError(err error) error {
-	return pkgerr.Wrap(err, "cause")
+	return pkgerr.WithStack(err)
 }
 func NewStackError(msg string) error {
 	return pkgerr.New(msg)
