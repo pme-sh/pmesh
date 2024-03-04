@@ -20,8 +20,8 @@ type Config struct {
 	Secret     string              `json:"secret"`     // Secret key used for all encryption
 	Topology   map[string][]string `json:"topology"`   // Topology of the mesh [Hostname -> Cluster]
 	Advertised string              `json:"advertised"` // Advertised hostname of this server
-	PeerUD     map[string]any      `json:"peer_ud"`    // Arbitrary data to be sent to peers
-	LocalUD    map[string]any      `json:"local_ud"`   // Arbitrary data used for parsing yaml
+	PeerUD     map[string]any      `json:"peerud"`     // Arbitrary data to be sent to peers
+	LocalUD    map[string]any      `json:"localud"`    // Arbitrary data used for parsing yaml
 }
 
 func (c *Config) SetDefaults() {

@@ -39,7 +39,7 @@ func init() {
 		if err != nil {
 			// If the connection is still fine, display an error message, must be an internal error.
 			if _, wr := conn.Write([]byte(`\n`)); wr != nil {
-				xlog.Warn().Err(err).Msg("Tail terminated abnormally")
+				xlog.Info().Err(err).Msg("Tail terminated abnormally")
 			}
 		}
 		err = http.ErrAbortHandler

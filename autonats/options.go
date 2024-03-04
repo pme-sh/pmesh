@@ -19,6 +19,7 @@ import (
 )
 
 type Options struct {
+	Debug       bool
 	ServerName  string // Name of the server
 	ClusterName string // Name of the cluster
 	StoreDir    string // Directory to store data

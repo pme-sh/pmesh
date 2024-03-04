@@ -146,8 +146,8 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 	defaultAccount.EnableJetStream(nil)
 	base := &natssrv.Options{
 		Trace:                  false,
-		Debug:                  true,
-		TraceVerbose:           true,
+		Debug:                  opts.Debug,
+		TraceVerbose:           opts.Debug,
 		Host:                   opts.Host,
 		Port:                   opts.Port,
 		ClientAdvertise:        opts.Advertise,
@@ -199,7 +199,11 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 
 	if opts.ClusterName == "" {
 		logger.Info().Msg("Starting leaf node")
-		for _, servers := range topology {
+		for clusterName, servers := range topology {
+			// skip seeding partition.
+			if clusterName == "" {
+				continue
+			}
 			rlo := &natssrv.RemoteLeafOpts{}
 			for _, s := range servers {
 				rlo.URLs = append(rlo.URLs, &url.URL{
@@ -215,6 +219,10 @@ func StartServer(opts Options, topology Topology) (srv *Server, err error) {
 	} else {
 		logger.Info().Msg("Starting cluster node")
 		for clusterName, servers := range topology {
+			// skip seeding partition.
+			if clusterName == "" {
+				continue
+			}
 			if clusterName == opts.ClusterName {
 				for _, s := range servers {
 					base.Routes = append(base.Routes, &url.URL{
