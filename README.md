@@ -30,6 +30,16 @@ The main objective of pmesh is to provide feature parity with all of the followi
 
 - **Distributed logging**: pmesh can capture logs from your services and provides a simple and powerful API for querying and observing them, including tailing logs, searching logs, and more, across all your services, all your machines, and all your sessions. It will also assign a unique ID to each request that can be used to precisely identify the logs associated with a request.
 
+## Installation
+
+The unzip package is required to install pmesh. Use `sudo apt install unzip` to install unzip package.
+
+```sh
+curl -fsSL https://get.pme.sh/install.sh | bash
+# to install a specific version
+curl -fsSL https://get.pme.sh/install.sh | bash -s "v0.1.5"
+```
+
 ## Building from source
 
 Make sure you have the latest version of Go installed and run:
