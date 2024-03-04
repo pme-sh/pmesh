@@ -310,10 +310,15 @@ func StartClientRequest(r *http.Request, infoProvider netx.IPInfoProvider) (rctx
 	// Set internal flag, stip secret from headers ASAP.
 	internal := session.Local
 	if !internal {
-		if scheme == "https" {
+		// If we verified the peer certificate using the mutual authenticator, it's internal.
+		if rctx.TLS != nil && len(rctx.TLS.PeerCertificates) != 0 && rctx.TLS.ServerName == "pm3" {
+			internal = true
+		} else if scheme == "https" {
+			// If the request is over HTTPS and the secret is in the basic auth, it's internal.
 			if u, pw, ok := rctx.BasicAuth(); ok {
 				if u == config.Get().Secret || pw == config.Get().Secret {
 					internal = true
+					delete(rctx.Header, "Authorization")
 				}
 			}
 		}

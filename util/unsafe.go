@@ -7,5 +7,5 @@ func UnsafeBuffer(s string) []byte {
 	return unsafe.Slice(b, len(s))
 }
 func UnsafeString(b []byte) string {
-	return unsafe.String(&b[0], len(b))
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }

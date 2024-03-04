@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"fmt"
 	"io"
-	"time"
 
 	"get.pme.sh/pmesh/config"
 )
@@ -72,10 +70,6 @@ func (i2 *IP2ASN) UnmarshalBinary(data []byte) error {
 	}
 	defer reader.Close()
 
-	t0 := time.Now()
-	defer func() {
-		fmt.Println("ip2asn unmarshal", time.Since(t0))
-	}()
 	d := newXsvDecoder(reader, "\t", "ip_start", "ip_end", "asn", "country_code", "asn_description")
 	for {
 		var block IP2ASNBlock
