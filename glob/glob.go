@@ -1,10 +1,14 @@
 package glob
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"regexp"
 
 	"get.pme.sh/pmesh/glob/gocodewalker"
+	"github.com/boyter/gocodewalker/go-gitignore"
 )
 
 type File = gocodewalker.File
@@ -140,5 +144,25 @@ func IgnoreArtifacts() Option {
 	return func(walker *Walker) {
 		walker.ExcludeDirectoryRegex = append(walker.ExcludeDirectoryRegex, regexp.MustCompile(`^\.build`))
 		walker.ExcludeDirectoryRegex = append(walker.ExcludeDirectoryRegex, regexp.MustCompile(`^\.run`))
+	}
+}
+func AddGitIgnores(dir string) Option {
+	return func(walker *Walker) {
+		dir, err := filepath.Abs(dir)
+		if err != nil {
+			return
+		}
+		for {
+			path := filepath.Join(dir, ".gitignore")
+			if c, err := os.ReadFile(path); err == nil {
+				gitIgnore := gitignore.New(bytes.NewReader(c), dir, nil)
+				walker.GitIgnores = append([]gitignore.GitIgnore{gitIgnore}, walker.GitIgnores...)
+			}
+			prev := dir
+			dir = filepath.Dir(dir)
+			if dir == "/" || dir == prev {
+				break
+			}
+		}
 	}
 }

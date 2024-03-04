@@ -237,7 +237,7 @@ func (app *AppService) BuildApp(c context.Context, force bool) (chk glob.Checksu
 
 	// Create a checksum.
 	//
-	chk = glob.Hash(app.ServiceRoot, glob.HashStat, glob.IgnoreArtifacts()).Dir(app.Root)
+	chk = glob.Hash(app.Root, glob.HashStat, glob.IgnoreArtifacts(), glob.AddGitIgnores(app.Root)).Dir(app.Root)
 
 	// Check the cache.
 	//

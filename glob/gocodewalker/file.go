@@ -48,6 +48,7 @@ type FileWalker struct {
 	ExcludeFilenameRegex   []*regexp.Regexp
 	AllowListExtensions    []string // Which extensions should be allowed case sensitive
 	ExcludeListExtensions  []string // Which extensions should be excluded case sensitive
+	GitIgnores             []gitignore.GitIgnore
 	walkMutex              sync.Mutex
 	terminateWalking       bool
 	isWalking              bool
@@ -123,7 +124,7 @@ func (f *FileWalker) Start() error {
 	f.isWalking = true
 	f.walkMutex.Unlock()
 
-	err := f.walkDirectoryRecursive(f.directory, []gitignore.GitIgnore{}, []gitignore.GitIgnore{})
+	err := f.walkDirectoryRecursive(f.directory, append([]gitignore.GitIgnore{}, f.GitIgnores...), []gitignore.GitIgnore{})
 	close(f.fileListQueue)
 
 	f.walkMutex.Lock()
