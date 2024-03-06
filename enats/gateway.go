@@ -22,7 +22,7 @@ type Client struct {
 }
 
 type Gateway struct {
-	*Client
+	Client
 	Server *autonats.Server
 	url    string
 
@@ -58,12 +58,6 @@ func New() (r *Gateway) {
 	return
 }
 func (r *Gateway) Open(ctx context.Context) (err error) {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-r.Server.Ready():
-	}
-	r.Client = &Client{}
 	if r.Server == nil {
 		if strings.HasPrefix(r.url, "nats://") {
 			r.Client.Conn, err = nats.Connect(r.url)
@@ -77,6 +71,11 @@ func (r *Gateway) Open(ctx context.Context) (err error) {
 			)
 		}
 	} else {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-r.Server.Ready():
+		}
 		r.Client.Conn, err = r.Server.Connect()
 	}
 	if err != nil {
@@ -153,8 +152,8 @@ func (r *Gateway) Open(ctx context.Context) (err error) {
 
 }
 func (r *Gateway) Close(ctx context.Context) (err error) {
-	if cli := r.Client; cli != nil {
-		r.Client = nil
+	if cli := r.Client; cli.Conn != nil {
+		r.Client.Conn = nil
 		select {
 		case <-ctx.Done():
 		case err = <-lo.Async(cli.Drain):

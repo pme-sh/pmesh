@@ -22,12 +22,13 @@ type InlineUnmarshaler interface {
 
 type Factory = func(node *yaml.Node) (any, error)
 type Registration struct {
-	generic func(node *yaml.Node) (any, error)
-	string  func(str string) (any, error)
+	FromNode   func(node *yaml.Node) (any, error)
+	FromString func(str string) (any, error)
+	Instance   any
 }
 
 type Registry[I any] struct {
-	tags map[string]*Registration
+	Tags map[string]*Registration
 }
 
 var fmtErrRejectedMatch = "failed to decode as [%s]"
@@ -74,14 +75,14 @@ func combineErrs(w error, a ...error) (err error) {
 
 func (r *Registry[I]) Unmarshal(node *yaml.Node) (res I, err error) {
 	if node.Tag != "" && !strings.HasPrefix(node.Tag, "!!") {
-		if reg, ok := r.tags[node.Tag[1:]]; ok {
+		if reg, ok := r.Tags[node.Tag[1:]]; ok {
 			// Adjust the tag to the correct type
 			node.Tag = ""
 			node.Tag = node.ShortTag()
 
 			// Call the unmarshaler
 			var result any
-			if result, err = reg.generic(node); err == nil {
+			if result, err = reg.FromNode(node); err == nil {
 				res = result.(I)
 			}
 			return
@@ -96,8 +97,8 @@ func (r *Registry[I]) Unmarshal(node *yaml.Node) (res I, err error) {
 
 			if !strings.Contains(str, " ") {
 				// Prioritize the tag with the same name
-				if reg, ok := r.tags[str]; ok {
-					if sfc := reg.string; sfc != nil {
+				if reg, ok := r.Tags[str]; ok {
+					if sfc := reg.FromString; sfc != nil {
 						result, serr := sfc(str)
 						if serr == nil {
 							res = result.(I)
@@ -107,8 +108,8 @@ func (r *Registry[I]) Unmarshal(node *yaml.Node) (res I, err error) {
 				}
 			}
 
-			for _, reg := range r.tags {
-				if sfc := reg.string; sfc != nil {
+			for _, reg := range r.Tags {
+				if sfc := reg.FromString; sfc != nil {
 					result, serr := sfc(str)
 					if serr == nil {
 						res = result.(I)
@@ -122,8 +123,8 @@ func (r *Registry[I]) Unmarshal(node *yaml.Node) (res I, err error) {
 
 	// Last resort
 	if node.Kind != yaml.MappingNode {
-		for _, reg := range r.tags {
-			if result, e := reg.generic(node); e == nil {
+		for _, reg := range r.Tags {
+			if result, e := reg.FromNode(node); e == nil {
 				return result.(I), nil
 			} else {
 				err = combineErrs(err, e)
@@ -141,10 +142,12 @@ func (r *Registry[I]) Define(tag string, defaults func() any) {
 	if _, ok := defaultValue.(I); !ok {
 		panic("defaults must implement the interface")
 	}
-	reg := &Registration{}
-	r.tags[tag] = reg
+	reg := &Registration{
+		Instance: defaultValue,
+	}
+	r.Tags[tag] = reg
 
-	reg.generic = func(node *yaml.Node) (res any, err error) {
+	reg.FromNode = func(node *yaml.Node) (res any, err error) {
 		result := defaults()
 		if node.Kind == yaml.ScalarNode {
 			// If the scalar is null, return defaults (empty map)
@@ -170,7 +173,7 @@ func (r *Registry[I]) Define(tag string, defaults func() any) {
 	}
 
 	if _, ok := defaultValue.(InlineUnmarshaler); ok {
-		reg.string = func(str string) (res any, err error) {
+		reg.FromString = func(str string) (res any, err error) {
 			result := defaults()
 			if iu, ok := result.(InlineUnmarshaler); ok {
 				err = iu.UnmarshalInline(str)
@@ -183,7 +186,7 @@ func (r *Registry[I]) Define(tag string, defaults func() any) {
 
 func NewRegistry[IFace any]() *Registry[IFace] {
 	reg := &Registry[IFace]{
-		tags: make(map[string]*Registration),
+		Tags: make(map[string]*Registration),
 	}
 	return reg
 }

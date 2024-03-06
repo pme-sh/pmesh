@@ -3,7 +3,6 @@ package glob
 import (
 	"context"
 	"crypto/sha1"
-	"encoding/binary"
 	"encoding/hex"
 	"hash"
 	"hash/crc32"
@@ -26,16 +25,6 @@ func hasher() hash.Hash {
 		return sha1.New()
 	}
 }
-func checksum(data []byte) (r Checksum) {
-	if hashSize == crc32.Size {
-		u32 := crc32.Checksum(data, tbl)
-		binary.LittleEndian.PutUint32(r[:], u32)
-	} else {
-		h := sha1.Sum(data)
-		copy(r[:], h[:])
-	}
-	return
-}
 
 type Checksum [hashSize]byte
 
@@ -46,34 +35,12 @@ func (d Checksum) String() string {
 	return hex.EncodeToString(d[:])
 }
 
-type HashKind uint8
-
-const (
-	HashContent HashKind = iota
-	HashStat    HashKind = iota
-)
-
-func hashAppend(h hash.Hash, file *File, kind HashKind) {
-	stat, err := os.Stat(file.Location)
+func hashAppend(h hash.Hash, file *File) {
 	h.Write([]byte(file.Location))
+	f, err := os.Open(file.Location)
 	if err == nil {
-		u1 := uint64(stat.Size())
-		u2 := uint64(stat.Mode())
-		u2 <<= 32
-		u2 ^= uint64(stat.ModTime().UnixNano())
-
-		buf := [16]byte{}
-		binary.LittleEndian.PutUint64(buf[:8], u1)
-		binary.LittleEndian.PutUint64(buf[8:], u2)
-		h.Write(buf[:])
-
-		if kind == HashContent {
-			f, err := os.Open(file.Location)
-			if err == nil {
-				defer f.Close()
-				io.Copy(h, f)
-			}
-		}
+		defer f.Close()
+		io.Copy(h, f)
 	}
 }
 func normalLoc(location string) string {
@@ -99,22 +66,24 @@ func (l *HashList) Dir(prefix string) Checksum {
 	}
 
 	i, _ := slices.BinarySearch(l.StableList, prefix)
-	subist := l.StableList[i:]
-
-	buf := make([]byte, hashSize*len(subist))
-	written := 0
+	h := hasher()
 	for _, loc := range l.StableList[i:] {
 		if !strings.HasPrefix(loc, prefix) {
 			break
 		}
-		h := [hashSize]byte(l.HashMap[loc])
-		copy(buf[written:], h[:])
-		written += hashSize
+		h.Write(l.HashMap[loc].Slice())
 	}
-	return checksum(buf[:written])
+	return Checksum(h.Sum(nil))
+}
+func (l *HashList) All() Checksum {
+	h := hasher()
+	for _, hash := range l.HashMap {
+		h.Write(hash.Slice())
+	}
+	return Checksum(h.Sum(nil))
 }
 
-func ReduceToHash(ch <-chan *File, kind HashKind) (l *HashList) {
+func ReduceToHash(ch <-chan *File) (l *HashList) {
 	l = &HashList{
 		HashMap: make(map[string]Checksum),
 	}
@@ -126,7 +95,7 @@ func ReduceToHash(ch <-chan *File, kind HashKind) (l *HashList) {
 			defer wg.Done()
 			var dig Checksum
 			h := hasher()
-			hashAppend(h, file, kind)
+			hashAppend(h, file)
 			copy(dig[:], h.Sum(nil))
 			loc := normalLoc(file.Location)
 
@@ -142,9 +111,9 @@ func ReduceToHash(ch <-chan *File, kind HashKind) (l *HashList) {
 	return
 }
 
-func HashContext(ctx context.Context, dir string, kind HashKind, opts ...Option) *HashList {
-	return ReduceToHash(WalkContext(ctx, dir, opts...), kind)
+func HashContext(ctx context.Context, dir string, opts ...Option) *HashList {
+	return ReduceToHash(WalkContext(ctx, dir, opts...))
 }
-func Hash(dir string, kind HashKind, opts ...Option) *HashList {
-	return HashContext(bgCtx, dir, kind, opts...)
+func Hash(dir string, opts ...Option) *HashList {
+	return HashContext(bgCtx, dir, opts...)
 }

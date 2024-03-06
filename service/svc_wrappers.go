@@ -12,9 +12,27 @@ import (
 	"get.pme.sh/pmesh/util"
 )
 
+type Advisor interface {
+	Advise(path string) any
+}
+
+func exists(path ...string) bool {
+	_, err := os.Stat(filepath.Join(path...))
+	return err == nil
+}
+
 type JsApp struct {
 	AppService `yaml:",inline"`
 	Index      string `yaml:"index,omitempty"`
+}
+
+func (app *JsApp) Advise(path string) any {
+	if !exists(path, "package.json") && exists(path, "index.js") {
+		return map[string]any{
+			"index": "index.js",
+		}
+	}
+	return nil
 }
 
 func (app *JsApp) Prepare(opt Options) error {
@@ -39,6 +57,13 @@ type NpmApp struct {
 	BuildScript    string `yaml:"build_script,omitempty"`
 	PackageManager string `yaml:"package_manager,omitempty"`
 	NoInstall      bool   `yaml:"no_install,omitempty"`
+}
+
+func (app *NpmApp) Advise(path string) any {
+	if exists(path, "package.json") {
+		return struct{}{}
+	}
+	return nil
 }
 
 func (app *NpmApp) Prepare(opt Options) error {
@@ -109,6 +134,13 @@ type PyApp struct {
 	Main         string `yaml:"main,omitempty"` // Main file to run
 }
 
+func (app *PyApp) Advise(path string) any {
+	if exists(path, "requirements.txt") && !exists(path, "app.py") {
+		return struct{}{}
+	}
+	return nil
+}
+
 func (app *PyApp) Prepare(opt Options) error {
 	if err := app.AppService.Prepare(opt); err != nil {
 		return err
@@ -155,6 +187,13 @@ type FlaskApp struct {
 	PyApp `yaml:",inline"`
 }
 
+func (app *FlaskApp) Advise(path string) any {
+	if exists(path, "requirements.txt") && exists(path, "app.py") {
+		return struct{}{}
+	}
+	return nil
+}
+
 func (app *FlaskApp) Prepare(opt Options) error {
 	if err := app.PyApp.Prepare(opt); err != nil {
 		return err
@@ -169,6 +208,13 @@ func (app *FlaskApp) Prepare(opt Options) error {
 type GoApp struct {
 	AppService `yaml:",inline"`
 	Main       string `yaml:"main,omitempty"`
+}
+
+func (app *GoApp) Advise(path string) any {
+	if exists(path, "main.go") {
+		return struct{}{}
+	}
+	return nil
 }
 
 func (app *GoApp) Prepare(opt Options) error {

@@ -1,8 +1,6 @@
 package lb
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -11,7 +9,6 @@ import (
 	"unsafe"
 
 	"get.pme.sh/pmesh/netx"
-	"get.pme.sh/pmesh/util"
 )
 
 type Upstream struct {
@@ -134,8 +131,7 @@ func NewHttpUpstreamTransport(address string, director func(r *http.Request), tr
 
 			// Ask load balancer to handle the error.
 			if hnd := ctx.LoadBalancer.OnErrorResponse(ctx, r); hnd != nil {
-				go util.DrainClose(r.Body)
-				r.Body = io.NopCloser(bytes.NewReader(nil))
+				r.Body.Close()
 				return SuppressedHttpError{hnd}
 			}
 			return nil

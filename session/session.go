@@ -111,7 +111,7 @@ func (s *Session) ResolveService(sv string) vhttp.Handler {
 	return service
 }
 func (s *Session) ResolveNats() *enats.Client {
-	return s.Nats.Client
+	return &s.Nats.Client
 }
 
 func New(path string) (s *Session, err error) {

@@ -14,6 +14,7 @@ import (
 	"get.pme.sh/pmesh/netx"
 	"get.pme.sh/pmesh/rate"
 	"get.pme.sh/pmesh/ray"
+	"get.pme.sh/pmesh/util"
 	"get.pme.sh/pmesh/xlog"
 )
 
@@ -127,6 +128,7 @@ func (blockedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type rstHandler struct{}
 
 func (rstHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer util.DrainClose(r.Body)
 	netx.ResetRequestConn(w)
 }
 

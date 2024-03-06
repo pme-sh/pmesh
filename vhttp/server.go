@@ -86,7 +86,7 @@ selector:
 			break selector
 		}
 	}
-	logger.Trace().Dur("time", time.Since(t0)).Msg("Request timing")
+	logger.Trace().EmbedObject(xlog.EnhanceRequest(r)).Msgf("Request took %s", time.Since(t0))
 
 	// If no match, 404
 	if !handled {

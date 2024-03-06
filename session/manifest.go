@@ -2,7 +2,6 @@ package session
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,11 +11,11 @@ import (
 	"get.pme.sh/pmesh/lyml"
 	"get.pme.sh/pmesh/netx"
 	"get.pme.sh/pmesh/service"
+	"get.pme.sh/pmesh/util"
 	"get.pme.sh/pmesh/vhttp"
 	"get.pme.sh/pmesh/xlog"
 
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -139,58 +138,17 @@ func (h *HostsLine) UnmarshalYAML(node *yaml.Node) error {
 	return node.Decode(&h.Hostname)
 }
 
-type OrderedMap[K comparable, V any] []lo.Tuple2[K, V]
-
-func (m *OrderedMap[K, V]) Set(key K, value V) {
-	for i, kv := range *m {
-		if kv.A == key {
-			(*m)[i].B = value
-			return
-		}
-	}
-	*m = append(*m, lo.Tuple2[K, V]{A: key, B: value})
-}
-func (m OrderedMap[K, V]) Get(key K) (v V, ok bool) {
-	for _, kv := range m {
-		if kv.A == key {
-			return kv.B, true
-		}
-	}
-	return
-}
-func (m OrderedMap[K, V]) ForEach(fn func(k K, v V)) {
-	for _, kv := range m {
-		fn(kv.A, kv.B)
-	}
-}
-func (m *OrderedMap[K, V]) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.MappingNode {
-		return errors.New("expected a map")
-	}
-	for i := 0; i < len(node.Content); i += 2 {
-		var kv lo.Tuple2[K, V]
-		if e := node.Content[i].Decode(&kv.A); e != nil {
-			return e
-		}
-		if e := node.Content[i+1].Decode(&kv.B); e != nil {
-			return e
-		}
-		*m = append(*m, kv)
-	}
-	return nil
-}
-
 type Manifest struct {
-	Root         string                              `yaml:"root,omitempty"`          // Root directory
-	ServiceRoot  string                              `yaml:"service_root,omitempty"`  // Service root directory
-	Services     OrderedMap[string, service.Service] `yaml:"services,omitempty"`      // Services
-	Server       map[string]*Server                  `yaml:"server,omitempty"`        // Virtual hosts
-	IPInfo       IPInfoOptions                       `yaml:"ipinfo,omitempty"`        // IP information provider
-	Env          map[string]string                   `yaml:"env,omitempty"`           // Environment variables
-	Runners      map[string]*Runner                  `yaml:"runners,omitempty"`       // Runners
-	Jet          JetManifest                         `yaml:"jet,omitempty"`           // JetStream configuration
-	Hosts        []HostsLine                         `yaml:"hosts,omitempty"`         // Hostname to IP mapping
-	CustomErrors string                              `yaml:"custom_errors,omitempty"` // Path to custom error pages
+	Root         string                                   `yaml:"root,omitempty"`          // Root directory
+	ServiceRoot  string                                   `yaml:"service_root,omitempty"`  // Service root directory
+	Services     util.OrderedMap[string, service.Service] `yaml:"services,omitempty"`      // Services
+	Server       map[string]*Server                       `yaml:"server,omitempty"`        // Virtual hosts
+	IPInfo       IPInfoOptions                            `yaml:"ipinfo,omitempty"`        // IP information provider
+	Env          map[string]string                        `yaml:"env,omitempty"`           // Environment variables
+	Runners      map[string]*Runner                       `yaml:"runners,omitempty"`       // Runners
+	Jet          JetManifest                              `yaml:"jet,omitempty"`           // JetStream configuration
+	Hosts        []HostsLine                              `yaml:"hosts,omitempty"`         // Hostname to IP mapping
+	CustomErrors string                                   `yaml:"custom_errors,omitempty"` // Path to custom error pages
 }
 
 func LoadManifest(manifestPath string) (*Manifest, error) {
