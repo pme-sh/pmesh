@@ -20,7 +20,6 @@ import (
 	"get.pme.sh/pmesh/glob"
 	"get.pme.sh/pmesh/health"
 	"get.pme.sh/pmesh/lb"
-	"get.pme.sh/pmesh/retry"
 	"get.pme.sh/pmesh/security"
 	"get.pme.sh/pmesh/util"
 	"get.pme.sh/pmesh/vhttp"
@@ -32,7 +31,6 @@ import (
 
 type AppService struct {
 	Options
-	Retry            retry.Policy       `yaml:"retry,omitempty"`             // The retry policy.
 	Monitor          health.Monitor     `yaml:"monitor,omitempty"`           // The health monitor.
 	LoadBalancerOpts lb.Options         `yaml:"lb,omitempty"`                // The load balancer.
 	Root             string             `yaml:"root,omitempty"`              // The root directory of the app.

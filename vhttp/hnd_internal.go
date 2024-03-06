@@ -11,32 +11,19 @@ import (
 )
 
 type InternalHandler struct {
-	Inner     Subhandler
-	Protected bool
+	Inner Subhandler
 }
 
 func (i InternalHandler) String() string {
 	if i.Inner.Handler != nil {
-		if i.Protected {
-			return fmt.Sprintf("Protected(%s)", i.Inner.Handler)
-		}
 		return fmt.Sprintf("Internal(%s)", i.Inner.Handler)
 	} else {
-		if i.Protected {
-			return "Protected"
-		}
 		return "Internal"
 	}
 }
 func (i *InternalHandler) UnmarshalText(text []byte) error {
-	if i.Protected {
-		if string(text) != "protected" {
-			return variant.RejectMatch(i)
-		}
-	} else {
-		if string(text) != "internal" {
-			return variant.RejectMatch(i)
-		}
+	if string(text) != "internal" {
+		return variant.RejectMatch(i)
 	}
 	return nil
 }
@@ -68,15 +55,7 @@ func (i *InternalHandler) UnmarshalYAML(node *yaml.Node) (err error) {
 
 func (i InternalHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) Result {
 	if r.Header.Get("P-Internal") != "1" {
-		if i.Protected {
-			h := w.Header()
-			h.Set("WWW-Authenticate", `Basic realm="Restricted"`)
-			h.Set("Content-Type", "text/plain")
-			h.Set("Referrer-Policy", "no-referrer")
-			Error(w, r, http.StatusUnauthorized)
-		} else {
-			Error(w, r, http.StatusForbidden)
-		}
+		Error(w, r, http.StatusForbidden)
 		return Done
 	}
 
@@ -93,5 +72,4 @@ func (i InternalHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) Resul
 
 func init() {
 	Registry.Define("internal", func() any { return &InternalHandler{} })
-	Registry.Define("protected", func() any { return &InternalHandler{Protected: true} })
 }

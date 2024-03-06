@@ -12,23 +12,25 @@
 
 [pmesh](https://pme.sh) is an all-in-one service manager, reverse proxy, and enterprise service bus. It is designed to be a simple and powerful all-in-one replacement for a wide variety of tools commonly deployed in web services. It is currently in alpha and under active development.
 
+You can find the documentation at [pme.sh](https://pme.sh), although it is still a work in progress.
+
 ## Features
 
-The main objective of pmesh is to provide feature parity with all of the following tools, while being simpler and more powerful, with a single binary and a single configuration file:
+pmesh is designed to streamline what was previously a complex web of separate tools into a single, efficient framework
 
-- **Reverse proxies (nginx, traefik, haproxy, ...)**: pmesh can act as a reverse proxy for your services, providing SSL termination, routing, rate-limiting, load balancing and more at very high speeds (200k+ req/s on a 12-core server). It also provides many additional features such as automatic GeoIP identification, automatic TLS certificate issuance, builtin URL signing, publishing webhooks as messages across the bus, and more.
+- **As a Reverse Proxy**: As an alternative to Nginx, HAProxy, and similar tools, pmesh delivers lightning-fast SSL termination, routing, rate-limiting, and load balancing, handling over 200k requests per second on a 12-core server. Beyond the basics, pmesh offers GeoIP identification, automatic TLS certificate management, URL signing, and even integrating webhooks into a message queue, all without breaking a sweat.
 
-- **Service managers (systemd, pm2, ...)**: pmesh can manage your services, automatically restarting them if they crash, scaling them up and down based on load, and providing a simple and powerful API for managing and observing them, rolling updates, checking health, and more. It can also seamlessly hot-swap services with zero downtime and features builtin support for npm, pnpm, yarn, go, flask, and many other languages and frameworks enabling single-line configuration of services, allowing you to focus on writing code, not managing services.
+- **For Service Management**: Taking on the role of systemd, pm2, and similar tools, pmesh simplifies service lifecycle management. It ensures services are always running, scales them according to demand, and provides a robust API for management tasks like rolling updates, health checks, and more. Its ability to support zero-downtime hot-swaps and built-in compatibility with a wide range of languages and frameworks means you spend less time on configuration and more on development.
 
-- **Service discovery (consul, etcd, ...)**: pmesh can automatically discover and register your services, and route traffic to them based on their health and other factors. It can also automatically configure your services to talk to each other, providing simple APIs such as Lambda functions.
+- **In Service Discovery**: Like consul and etcd, pmesh automates the discovery and registration of services, directing traffic based on service health and other metrics. It facilitates inter-service communication with straightforward APIs, making setup and maintenance a breeze.
 
-- **ESB/Message Queues (RabbitMQ, Kafka, ...)**: pmesh can provide a simple and powerful message bus for your services to communicate with each other, including pub/sub, request/reply, and more. It embeds a fork of the NATS.io server, which is designed for high performance and low latency, with additional features such as automatic setup of clusters and superclusters, node discovery, and more.
+- **As a Message Bus**: Integrating the functionality of systems like RabbitMQ and Kafka, pmesh offers a high-performance, low-latency messaging system for inter-service communication and event-driven architectures. Embedded within pmesh is a fork of NATS.io, a high-performance messaging system, designed for high-throughput, low-latency messaging.
 
-- **KV and Object Storage**: With the embedded JetStream server, pmesh can provide a simple and powerful key-value store and object storage for your services, including automatic replication, sharding, and many other features.
+- **As a KV and Object Store**: pmesh offers a high-availability key-value store and object storage, with features like auto-replication and sharding, simplifying data management and storage, making your services more resilient and responsive.
 
-- **Topology management**: pmesh instances can be spread across multiple machines, automatically discovering each other and forming a cluster, optimizing routes based on region detection, all with a simple `pmesh join pmtp://...` command. No impossible to maintain configuration of servers, no manual assignment of routes and regions, no need to restart any service. Automatically manage `/etc/hosts`, transparently issue TLS certificates, and authenticate mutually with client-certificates.
+- **With Topology Management**: Written with distibuted systems in mind, pmesh is designed to allow any number of pmesh instances to form a self-discovering, self-healing, and optimizing topology. Making it easy to manage and scale your infrastructure all with a single `pmesh join pmtp://...` command. No impossible to maintain configuration of servers, no manual assignment of routes and regions, no need to restart any service. It automates local DNS management, issues TLS certificates transparently, and ensures security with mutual authentication between nodes using client certificates.
 
-- **Distributed logging**: pmesh can capture logs from your services and provides a simple and powerful API for querying and observing them, including tailing logs, searching logs, and more, across all your services, all your machines, and all your sessions. It will also assign a unique ID to each request that can be used to precisely identify the logs associated with a request.
+- **Through Distributed Logging**: pmesh captures the logs from all services into a centralized system you can query, search, and even tail in real-time across your entire infrastructure. For any request, pmesh assigns a unique Ray ID, allowing you to track it across all services, making it easy to debug and monitor your infrastructure.
 
 ## Installation
 
@@ -76,11 +78,12 @@ Configuration:
   setup       Run the setup utility
 
 Daemon:
-  go          Start the pmesh node with a manifest file
+  go          Start the pmesh node with a manifest
   preview     Previews the rendered manifest
 
 Additional Commands:
   completion  Generate the autocompletion script for the specified shell
+  create      Create a new manifest
   help        Help about any command
 
 Flags:

@@ -210,8 +210,7 @@ func CreateAPIHost(session *Session) *vhttp.VirtualHost {
 		Hostnames: []string{"pm3"},
 	})
 	vh.Mux.Then(vhttp.InternalHandler{
-		Inner:     vhttp.Subhandler{Handler: apiHandler{}},
-		Protected: true,
+		Inner: vhttp.Subhandler{Handler: apiHandler{}},
 	})
 	return vh
 }
