@@ -318,6 +318,10 @@ func (fsrv *FileServer) notFound(w http.ResponseWriter, r *http.Request) vhttp.R
 	if fsrv.NotFound == "" {
 		return vhttp.Continue
 	}
+	if fsrv.NotFound == "default" {
+		vhttp.Error(w, r, http.StatusNotFound)
+		return vhttp.Done
+	}
 
 	file404, err404 := fsrv.filesystem.Open(fsrv.NotFound)
 	if err404 != nil {

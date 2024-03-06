@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	VersionString = "v0.2" // Only updated for major/minor releases.
+	VersionString = "v0.3" // Only updated for major/minor releases.
 )
 
 func getCommit() string {
