@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"get.pme.sh/pmesh/tlsmux"
+	"get.pme.sh/pmesh/xlog"
 
 	natssrv "get.pme.sh/pnats/server"
 	"github.com/nats-io/nats.go"
@@ -250,7 +251,13 @@ func StartServer(opts Options) (srv *Server, err error) {
 	if err != nil {
 		return
 	}
-	natss.SetLogger(Logger{Logger: logger}, base.Debug, base.Trace)
+	natsLogger := Logger{Logger: logger}
+	if !opts.Debug {
+		newLogger := logger.Level(xlog.LevelInfo)
+		natsLogger.Logger = &newLogger
+	}
+
+	natss.SetLogger(natsLogger, base.Debug, base.Trace)
 	natss.Start()
 
 	// Fill the HTTP Server.
@@ -342,6 +349,7 @@ func StartServer(opts Options) (srv *Server, err error) {
 		}()
 
 		for i := 0; ; i++ {
+			// Wait for the server to be ready
 			if !natss.ReadyForConnections(5 * time.Second) {
 				logger.Info().Err(err).Msg("Init: Waiting for NATS server to accept connections")
 				if time.Now().After(deadline) {
@@ -353,6 +361,7 @@ func StartServer(opts Options) (srv *Server, err error) {
 				continue
 			}
 
+			// Connect to the server
 			if conn == nil {
 				var err error
 				conn, err = srv.Connect(nats.Timeout(time.Until(deadline)))
@@ -362,22 +371,21 @@ func StartServer(opts Options) (srv *Server, err error) {
 				}
 			}
 
-			// Test jetstream cluster
-			jsc, err := jetstream.New(conn)
-			if err != nil {
-				logger.Info().Err(err).Msg("Init: Waiting for Jetstream to become ready")
-				time.Sleep(1 * time.Second)
-				continue
+			// Try messaging the jetstream API up to 5 times
+			var jserr error
+			for i := 0; i < 5; i++ {
+				_, jserr = conn.Request("$JS.API.INFO", nil, 100*time.Millisecond)
+				if jserr == nil {
+					break
+				}
 			}
-			_, err = jsc.AccountInfo(context.Background())
-			if err != nil {
-				logger.Info().Err(err).Msg("Init: Waiting for Jetstream to become ready")
-				time.Sleep(1 * time.Second)
+			if jserr != nil {
+				logger.Info().Err(jserr).Msg("Init: Waiting for Jetstream to become ready")
 				continue
 			}
 
 			// Test jetstream node placement
-
+			jsc := lo.Must(jetstream.New(conn)) // There's nothing to fail here
 			kv, err := jsc.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
 				Bucket:      "pmesh-probe",
 				Description: "pmesh-probe",

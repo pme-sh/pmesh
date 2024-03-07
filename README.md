@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="logos/pmesh_title.png" width="248" alt="pme.sh">
+  <a href="https://pme.sh">
+    <img src="logos/pmesh_title.png" width="248" alt="pme.sh">
+  </a>
 </p>
 <p align="center">
    <a href="https://github.com/pme-sh/pmesh/actions/workflows/build.yml">
