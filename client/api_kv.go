@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"get.pme.sh/pmesh/session"
 )
@@ -50,15 +51,8 @@ func (c Client) KVList() (res []string, err error) {
 	err = c.Call("GET /kv", nil, &res)
 	return
 }
-func (c Client) KVDailyList() (res []string, err error) {
-	err = c.Call("GET /kv/d", nil, &res)
-	return
-}
-func (c Client) KVWeeklyList() (res []string, err error) {
-	err = c.Call("GET /kv/w", nil, &res)
-	return
-}
-func (c Client) KVMonthlyList() (res []string, err error) {
-	err = c.Call("GET /kv/m", nil, &res)
+func (c Client) Result(stream string, seq int) (res json.RawMessage, err error) {
+	path := fmt.Sprintf("/result/%s/%d", stream, seq)
+	err = c.Call(path, nil, &res)
 	return
 }

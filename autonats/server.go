@@ -340,6 +340,8 @@ func StartServer(opts Options) (srv *Server, err error) {
 	// Wait for the server to be ready
 	go func() {
 		deadline := time.Now().Add(ServerStartTimeout)
+		ctx, cancel := context.WithDeadline(context.Background(), deadline)
+		defer cancel()
 
 		var conn *nats.Conn
 		defer func() {
@@ -386,7 +388,11 @@ func StartServer(opts Options) (srv *Server, err error) {
 
 			// Test jetstream node placement
 			jsc := lo.Must(jetstream.New(conn)) // There's nothing to fail here
-			kv, err := jsc.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
+			if _, err := jsc.AccountInfo(ctx); err != nil {
+				logger.Info().Err(err).Msg("Init: Waiting for Jetstream to become ready")
+				continue
+			}
+			kv, err := jsc.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{
 				Bucket:      "pmesh-probe",
 				Description: "pmesh-probe",
 				TTL:         1 * time.Minute,
@@ -398,7 +404,7 @@ func StartServer(opts Options) (srv *Server, err error) {
 				continue
 			}
 
-			if _, err := kv.Put(context.Background(), "test", []byte{0x1}); err != nil {
+			if _, err := kv.Put(ctx, "test", []byte{0x1}); err != nil {
 				logger.Info().Err(err).Msg("Init: Waiting for Jetstream RAFT log to become ready (write)")
 				time.Sleep(1 * time.Second)
 				continue

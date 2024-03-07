@@ -29,10 +29,12 @@ type Gateway struct {
 	// Internal resources
 	PeerKV, SchedulerKV jetstream.KeyValue
 	// Global resources for the user
-	DefaultKV, DailyKV, WeeklyKV, MonthlyKV jetstream.KeyValue
+	DefaultKV, ResultKV jetstream.KeyValue
 
 	EventStream jetstream.Stream
 }
+
+const EventStreamPrefix = "ev."
 
 func New() (r *Gateway) {
 	r = &Gateway{}
@@ -119,13 +121,7 @@ func (r *Gateway) Open(ctx context.Context) (err error) {
 		if makeKV(&r.DefaultKV, "global", 0); err != nil {
 			return
 		}
-		if makeKV(&r.DailyKV, "daily", 24*time.Hour); err != nil {
-			return
-		}
-		if makeKV(&r.WeeklyKV, "weekly", 7*24*time.Hour); err != nil {
-			return
-		}
-		if makeKV(&r.MonthlyKV, "monthly", 30*24*time.Hour); err != nil {
+		if makeKV(&r.ResultKV, "results", 0); err != nil {
 			return
 		}
 
@@ -142,7 +138,7 @@ func (r *Gateway) Open(ctx context.Context) (err error) {
 			MaxBytes:     -1,
 			Duplicates:   0,
 			AllowDirect:  true,
-			Subjects:     []string{"ev.>"},
+			Subjects:     []string{EventStreamPrefix + ">"},
 		})
 		if err != nil {
 			return
@@ -162,20 +158,6 @@ func (r *Gateway) Close(ctx context.Context) (err error) {
 	}
 	if r.Server != nil {
 		err = errors.Join(err, r.Server.Shutdown(ctx))
-	}
-	return
-}
-
-// Gets the KV store for the default kv usage given the key.
-func (r *Gateway) DefaultKVStore(key string) (kv jetstream.KeyValue) {
-	if strings.HasPrefix(key, "d.") {
-		kv = r.DailyKV
-	} else if strings.HasPrefix(key, "w.") {
-		kv = r.WeeklyKV
-	} else if strings.HasPrefix(key, "m.") {
-		kv = r.MonthlyKV
-	} else {
-		kv = r.DefaultKV
 	}
 	return
 }

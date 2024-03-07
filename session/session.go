@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -271,8 +272,11 @@ func (s *Session) ReloadLocked(invalidate bool) error {
 	})
 
 	// Start all the services that are in the new manifest
+	states := make(map[string]*ServiceState)
 	manifest.Services.ForEach(func(name string, sv service.Service) {
-		s.StartService(name, sv, invalidate)
+		if state, err := s.StartService(name, sv, invalidate); err == nil {
+			states[name] = state
+		}
 	})
 
 	// Stop the previous listeners
@@ -288,6 +292,35 @@ func (s *Session) ReloadLocked(invalidate bool) error {
 			return err
 		}
 		s.TaskSubscriptions = append(s.TaskSubscriptions, ctx)
+	}
+
+	// Start the service listeners
+	for svc, state := range states {
+		subject := fmt.Sprintf("svc.%s.", svc)
+		implicitRunner := Runner{}
+		pfx := "/svc/" + svc
+		implicitRunner.Route.Mux.Then(vhttp.HandlerFunc(func(w http.ResponseWriter, r *http.Request) vhttp.Result {
+			r.URL.Path = strings.TrimPrefix(r.URL.Path, pfx)
+			if r.URL.Path == "" {
+				r.URL.Path = "/"
+			}
+			return state.ServeHTTP(w, r)
+		}))
+
+		{
+			ctx, err := implicitRunner.Listen(s.Context, s.Nats, subject)
+			if err != nil {
+				return err
+			}
+			s.TaskSubscriptions = append(s.TaskSubscriptions, ctx)
+		}
+		{
+			ctx, err := implicitRunner.Listen(s.Context, s.Nats, "raw."+subject)
+			if err != nil {
+				return err
+			}
+			s.TaskSubscriptions = append(s.TaskSubscriptions, ctx)
+		}
 	}
 
 	s.manifest.Store(manifest)

@@ -13,7 +13,7 @@ import (
 	"get.pme.sh/pmesh/vhttp"
 	"get.pme.sh/pmesh/xpost"
 
-	"github.com/nats-io/nats.go/jetstream"
+	"github.com/nats-io/nats.go"
 )
 
 func init() {
@@ -67,14 +67,23 @@ func init() {
 		res = session.Peerlist.List(true)
 		return
 	})
-	Match("/publish/{topic}", func(session *Session, r *http.Request, p json.RawMessage) (ack jetstream.PubAck, err error) {
-		subject := enats.ToPublisherSubject(r.PathValue("topic"))
-		a, e := session.Nats.Jet.Publish(r.Context(), subject, p)
-		if e != nil {
-			err = e
+	Match("/publish/{topic}", func(session *Session, r *http.Request, p json.RawMessage) (ack json.RawMessage, err error) {
+		subject := enats.ToSubject(r.PathValue("topic"))
+
+		deadline, ok := r.Context().Deadline()
+		if !ok {
+			deadline = time.Now().Add(30 * time.Second)
+		}
+		res, err := session.Nats.RequestMsg(&nats.Msg{
+			Subject: subject,
+			Data:    p,
+			Header:  nats.Header(r.Header),
+		}, time.Until(deadline))
+		if err != nil {
 			return
 		}
-		return *a, nil
+		ack = res.Data
+		return
 	})
 	MatchLocked("/reload", func(session *Session, r *http.Request, p ServiceInvalidate) (_ any, err error) {
 		err = session.ReloadLocked(p.Invalidate)

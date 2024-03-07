@@ -20,6 +20,15 @@ type Handler interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request) Result
 	String() string
 }
+type HandlerFunc func(w http.ResponseWriter, r *http.Request) Result
+
+func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) Result {
+	return f(w, r)
+}
+func (f HandlerFunc) String() string {
+	return "HandlerFunc"
+}
+
 type Subhandler struct {
 	Handler
 }

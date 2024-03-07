@@ -6,6 +6,8 @@ import (
 	"get.pme.sh/pmesh/util"
 )
 
+const RetrierMaxDelayCoeff = 20
+
 type Policy struct {
 	Attempts int           `json:"attempts,omitempty" yaml:"attempts,omitempty"` // The maximum number of retries.
 	Backoff  util.Duration `json:"backoff,omitempty" yaml:"backoff,omitempty"`   // The base delay between retries.
@@ -27,13 +29,33 @@ func Long() Policy {
 	}
 }
 
-func (p Policy) adjust() Policy {
-	if p.Attempts == 0 {
-		p.Attempts = 8
+func (retry Policy) WithDefaults() Policy {
+	if retry.Attempts == 0 {
+		retry.Attempts = 8
 	}
-	p.Backoff = p.Backoff.Or(150 * time.Millisecond)
-	p.Timeout = p.Timeout.Or(30 * time.Second)
-	return p
+	retry.Backoff = retry.Backoff.Or(150 * time.Millisecond)
+	retry.Timeout = retry.Timeout.Or(30 * time.Second)
+	return retry
+}
+
+func (retry Policy) MaxDelay() time.Duration {
+	return retry.Backoff.Duration() * RetrierMaxDelayCoeff
+}
+
+func (retry Policy) StepN(n int) (delay time.Duration, err error) {
+	if retry.Attempts > 0 && n >= retry.Attempts {
+		return 0, ErrMaxAttemptsExceeded
+	}
+	delay = retry.Backoff.Duration()
+	maxdelay := retry.MaxDelay()
+	for ; n > 0; n-- {
+		delay += retry.Backoff.Duration()
+		delay = delay + (delay >> 1) // Exponential backoff
+		if delay > maxdelay {
+			return maxdelay, nil
+		}
+	}
+	return
 }
 
 func (retry Policy) Step(step *int, delay *time.Duration) error {
@@ -50,6 +72,7 @@ func (retry Policy) Step(step *int, delay *time.Duration) error {
 	} else {
 		*delay += retry.Backoff.Duration()
 		*delay = *delay + (*delay >> 1) // Exponential backoff
+		*delay = min(*delay, retry.MaxDelay())
 	}
 	return nil
 }

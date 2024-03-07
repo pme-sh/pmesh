@@ -1,15 +1,17 @@
 package session
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"get.pme.sh/pmesh/enats"
@@ -19,6 +21,7 @@ import (
 	"get.pme.sh/pmesh/vhttp"
 	"get.pme.sh/pmesh/xlog"
 
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
 )
@@ -34,9 +37,9 @@ type ScheduledRunner struct {
 func (sch *ScheduledRunner) Run(ctx context.Context, idx int, gw *enats.Gateway, topic, queueName string) {
 	subject := ""
 	if sch.Topic != "" {
-		subject = enats.ToPublisherSubject(sch.Topic)
+		subject = enats.ToSubject(sch.Topic)
 	} else {
-		subject = enats.ToPublisherSubject(topic)
+		subject = enats.ToSubject(topic)
 	}
 
 	lock := fmt.Sprintf("%s.%s.%d", subject, queueName, idx)
@@ -103,8 +106,7 @@ func (sch *ScheduledRunner) Run(ctx context.Context, idx int, gw *enats.Gateway,
 		} else if nextRun.Before(now) {
 			nextRun = now.Add(interval)
 			if err := xchg(nextRun, revision); err == nil {
-				//	fmt.Printf("xchg ok %d %s\n", id, nextRun)
-				_, err := gw.Jet.Publish(ctx, subject, payload)
+				err := gw.Publish(subject, payload)
 				if err != nil {
 					log.Err(err).Msg("Failed to publish scheduler message")
 					xchg(now, revision+1)
@@ -121,71 +123,14 @@ func (sch *ScheduledRunner) Run(ctx context.Context, idx int, gw *enats.Gateway,
 }
 
 type Runner struct {
-	Route    vhttp.HandleMux   `yaml:"route,omitempty"`     // HTTP route for the task
-	Content  string            `yaml:"content,omitempty"`   // Content type for the task
-	Method   string            `yaml:"method,omitempty"`    // HTTP method for the task
-	Schedule []ScheduledRunner `yaml:"schedule,omitempty"`  // Schedule for the task
-	Timeout  util.Duration     `yaml:"timeout,omitempty"`   // Timeout for the task
-	NakDelay util.Duration     `yaml:"nak_delay,omitempty"` // Delay before NAKing a message
-	Rate     rate.Rate         `yaml:"rate,omitempty"`      // Rate limit for the task
-	Serial   bool              `yaml:"serial,omitempty"`    // Process messages serially
-	Oneshot  bool              `yaml:"oneshot,omitempty"`   // Terminate after the first message
-	NoMeta   bool              `yaml:"no_meta,omitempty"`   // Do not include metadata in the request
-	Verbose  bool              `yaml:"verbose,omitempty"`   // Log verbose messages
+	Route        vhttp.HandleMux   `yaml:"route,omitempty"`          // HTTP route for the task
+	Schedule     []ScheduledRunner `yaml:"schedule,omitempty"`       // Schedule for the task
+	Rate         rate.Rate         `yaml:"rate,omitempty"`           // Rate limit for the task
+	NoDeadLetter bool              `yaml:"no_dead_letter,omitempty"` // Do not send to dead letter
+	retry.Policy `yaml:",inline"`
 }
 
-func (t *Runner) CreateRequest(ctx context.Context, subject string, data []byte, meta *jetstream.MsgMetadata) (request *http.Request, err error) {
-	if t.Content == "http" {
-		request, err = http.ReadRequest(bufio.NewReader(bytes.NewReader(data)))
-		if err != nil {
-			return nil, err
-		}
-		request = request.WithContext(ctx)
-	} else {
-		topic, _ := enats.ToTopic(subject)
-		if topic == "" {
-			return nil, fmt.Errorf("invalid subject: %s", subject)
-		}
-		fakeUrl := "http://work/" + strings.ReplaceAll(topic, ".", "/")
-		method := t.Method
-
-		if method == "" {
-			if len(data) == 0 {
-				method = "GET"
-			} else {
-				method = "POST"
-			}
-		}
-
-		if method == "GET" {
-			request, err = http.NewRequestWithContext(ctx, "GET", fakeUrl, nil)
-		} else {
-			request, err = http.NewRequestWithContext(ctx, method, fakeUrl, bytes.NewReader(data))
-		}
-		if err != nil {
-			return nil, err
-		}
-		if method != "GET" {
-			if t.Content != "" {
-				request.Header["Content-Type"] = []string{t.Content}
-			} else if t.Content != "unset" {
-				request.Header["Content-Type"] = []string{"application/json; charset=utf-8"}
-			}
-		}
-	}
-	if meta != nil {
-		request.Header["P-CSeq"] = []string{fmt.Sprintf("%d", meta.Sequence.Consumer)}
-		request.Header["P-SSeq"] = []string{fmt.Sprintf("%d", meta.Sequence.Stream)}
-		request.Header["P-Stream"] = []string{meta.Stream}
-		request.Header["P-Consumer"] = []string{meta.Consumer}
-		request.Header["P-Domain"] = []string{meta.Domain}
-		request.Header["P-Timestamp"] = []string{meta.Timestamp.Format(time.RFC3339Nano)}
-		request.Header["P-NumDelivered"] = []string{fmt.Sprintf("%d", meta.NumDelivered)}
-		request.Header["P-NumPending"] = []string{fmt.Sprintf("%d", meta.NumPending)}
-	}
-	return vhttp.StartInternalRequest(request), nil
-}
-func (t *Runner) ServeMsg(ctx context.Context, subject string, data []byte, meta *jetstream.MsgMetadata) (err error) {
+func (t *Runner) ServeMsg(ctx context.Context, subject string, data []byte, meta *jetstream.MsgMetadata, headers nats.Header) (res []byte, err error) {
 	paniced := true
 	defer func() {
 		if paniced {
@@ -194,148 +139,302 @@ func (t *Runner) ServeMsg(ctx context.Context, subject string, data []byte, meta
 		}
 	}()
 
-	request, err := t.CreateRequest(ctx, subject, data, meta)
+	// Create a request representing the message
+	topic := enats.ToTopic(subject)
+	url := "http://worker/" + strings.ReplaceAll(topic, ".", "/")
+	request, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
 	if err != nil {
 		paniced = false
-		return retry.Disable(fmt.Errorf("failed to create request: %w", err))
+		return nil, retry.Disable(fmt.Errorf("failed to create request: %w", err))
+	}
+
+	// Add metadata to the request
+	if meta != nil {
+		request.Header["C-ID"] = []string{meta.Consumer}
+		request.Header["C-Pending"] = []string{fmt.Sprintf("%d", meta.NumPending)}
+		request.Header["C-Seq"] = []string{fmt.Sprintf("%d", meta.Sequence.Consumer)}
+		request.Header["C-Attempt"] = []string{fmt.Sprintf("%d", max(1, meta.NumDelivered)-1)}
+
+		request.Header["S-ID"] = []string{meta.Stream}
+		request.Header["S-Seq"] = []string{fmt.Sprintf("%d", meta.Sequence.Stream)}
+		request.Header["S-Domain"] = []string{meta.Domain}
+		request.Header["S-Time"] = []string{strconv.FormatInt(meta.Timestamp.UnixMilli(), 10)}
+	}
+
+	// Serve the request
+	request = vhttp.StartInternalRequest(request)
+	for k, v := range headers {
+		request.Header[k] = v
+		if k == "P-Ip" && len(v) == 1 {
+			request.RemoteAddr = v[0] + ":0"
+		}
 	}
 	buf := vhttp.NewBufferedResponse(nil)
 	t.Route.ServeHTTP(buf, request)
 
+	// Handle the response
 	paniced = false
 	if 200 <= buf.Status && buf.Status < 299 {
-		return nil
+		if buf.Status == 204 || buf.Status == 202 {
+			return nil, nil
+		}
+		return buf.Body.Bytes(), nil
+	}
+	if buf.Status == 404 {
+		return nil, errors.New("service not found, broken route")
 	}
 	if 400 <= buf.Status && buf.Status < 499 {
-		return retry.Disable(fmt.Errorf("HTTP %d: %s", buf.Status, buf.Body.String()))
+		return nil, retry.Disable(fmt.Errorf("HTTP %d: %s", buf.Status, buf.Body.String()))
 	}
-	return fmt.Errorf("HTTP %d: %s", buf.Status, buf.Body.String())
+	return nil, fmt.Errorf("HTTP %d: %s", buf.Status, buf.Body.String())
 }
-func (t *Runner) ServeNow(ctx context.Context, msg jetstream.Msg) {
-	logger := xlog.Ctx(ctx).With().Str("subject", msg.Subject()).Str("reply", msg.Reply()).Logger()
-	if t.Verbose {
-		logger.Info().Msg("Task received")
+func (t *Runner) ServeCore(ctx context.Context, gw *enats.Gateway, msg *nats.Msg) {
+	logger := xlog.Ctx(ctx).With().Str("subject", msg.Subject).Str("reply", msg.Reply).Logger()
+	logger.Debug().Msg("Task received")
+
+	data, err := t.ServeMsg(ctx, msg.Subject, msg.Data, nil, msg.Header)
+	if err != nil {
+		xlog.Warn().Err(err).Msg("Failed to execute task")
+
+		// If no reply is set, we don't need to do anything
+		if msg.Reply == "" {
+			return
+		}
+
+		// Not jetstream, so no ack/nak, just reply with the error
+		msg.RespondMsg(&nats.Msg{
+			Subject: msg.Reply,
+			Data:    []byte(err.Error()),
+			Header:  nats.Header{"Status": []string{"500"}},
+		})
+	} else {
+		// If no reply is set, we don't need to do anything
+		if msg.Reply == "" {
+			return
+		}
+
+		// Respond with the result
+		msg.Respond(data)
 	}
-	ctx, cancel := context.WithTimeout(ctx, t.Timeout.Or(5*time.Minute).Duration())
+}
+func (t *Runner) ServeJetstream(ctx context.Context, gw *enats.Gateway, msg jetstream.Msg) {
+	logger := xlog.Ctx(ctx).With().Str("subject", msg.Subject()).Str("reply", msg.Reply()).Logger()
+	logger.Debug().Msg("Task received")
+
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var meta *jetstream.MsgMetadata
-	if !t.NoMeta {
-		meta, _ = msg.Metadata()
-	}
-	status := lo.Async(func() error { return t.ServeMsg(ctx, msg.Subject(), msg.Data(), meta) })
+	// Create a ticker to declare in progress
+	mu := &sync.Mutex{}
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if !mu.TryLock() {
+					return
+				}
+				if err := msg.InProgress(); err != nil {
+					logger.Warn().Err(err).Msg("Failed to declare in progress")
+				}
+				mu.Unlock()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Error().Msg("Task timed out")
-			if t.Oneshot {
-				msg.Term()
-			} else {
-				msg.Nak()
+	// Execute the task and stop the ticker
+	meta := lo.Must(msg.Metadata())
+	data, err := t.ServeMsg(ctx, msg.Subject(), msg.Data(), meta, msg.Headers())
+	mu.Lock()
+
+	if err != nil {
+		logger.Err(err).Msg("Failed to execute task")
+
+		if retry.Retryable(err) {
+			delay, err := t.Policy.WithDefaults().StepN(int(meta.NumDelivered) - 1)
+			if err == nil {
+				msg.NakWithDelay(delay)
+				return
 			}
-			return
-		case err := <-status:
+		}
+
+		if !t.NoDeadLetter {
+			data, err := json.Marshal(map[string]interface{}{"error": err.Error()})
+			if err == nil {
+				_, err = gw.ResultKV.Put(
+					context.Background(),
+					fmt.Sprintf("%s-%d", meta.Stream, meta.Sequence.Stream),
+					data,
+				)
+			}
 			if err != nil {
-				logger.Err(err).Msg("Failed to execute task")
-				if !t.Oneshot && retry.Retryable(err) {
-					msg.NakWithDelay(t.NakDelay.Or(1 * time.Minute).Duration())
-				} else {
-					msg.Term()
-				}
-			} else {
-				if t.Verbose {
-					logger.Info().Msg("Task completed")
-				}
-				msg.Ack()
+				logger.Err(err).Msg("Failed to store result")
+				msg.Nak()
+				return
 			}
-			return
-		case <-time.After(10 * time.Second):
-			if err := msg.InProgress(); err != nil {
-				logger.Warn().Err(err).Msg("Failed to declare in progress")
+		}
+		msg.Term()
+	} else {
+		logger.Trace().Msg("Task completed")
+		if len(data) != 0 {
+			_, err := gw.ResultKV.Put(
+				context.Background(),
+				fmt.Sprintf("%s-%d", meta.Stream, meta.Sequence.Stream),
+				data,
+			)
+			if err != nil {
+				logger.Err(err).Msg("Failed to store result")
+				msg.Nak()
+				return
+			}
+		}
+		msg.Ack()
+	}
+}
+
+func consumeWrapper[T any](ctx context.Context, rate rate.Rate, fetch func() (T, error), serve func(T)) {
+	left := uint(0)
+	next := time.Time{}
+
+	for ctx.Err() == nil {
+		// If we're past the previous period, reset the counter
+		now := time.Now()
+		if next.Before(now) {
+			next = now.Add(rate.Period)
+			left = rate.Count
+		}
+
+		sleep := time.Time{}
+		if left <= 0 {
+			// If we have no quota left, sleep until the next period
+			sleep = next
+		} else if msg, err := fetch(); err != nil {
+			// If we have quota left, but next errors, sleep for a bit
+			sleep = now.Add(1 * time.Second)
+		} else {
+			// Run the message handler and decrement the quota
+			go serve(msg)
+			left--
+		}
+
+		if !sleep.IsZero() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(sleep.Sub(now)):
 			}
 		}
 	}
 }
-func (t *Runner) Serve(ctx context.Context, msg jetstream.Msg) {
-	if t.Serial {
-		t.ServeNow(ctx, msg)
+
+func (t *Runner) ConsumeCore(ctx context.Context, gw *enats.Gateway, subj, queue string) (err error) {
+	var sub *nats.Subscription
+	if t.Rate.IsZero() {
+		sub, err = gw.QueueSubscribe(subj, queue, func(msg *nats.Msg) {
+			t.ServeCore(ctx, gw, msg)
+		})
+		if err != nil {
+			return err
+		}
 	} else {
-		go t.ServeNow(ctx, msg)
+		sub, err = gw.QueueSubscribeSync(subj, queue)
+		if err != nil {
+			return err
+		}
+		go consumeWrapper(
+			ctx,
+			t.Rate,
+			func() (msg *nats.Msg, err error) { return sub.NextMsgWithContext(ctx) },
+			func(msg *nats.Msg) { t.ServeCore(ctx, gw, msg) },
+		)
 	}
+	context.AfterFunc(ctx, func() { sub.Unsubscribe() })
+	return nil
 }
-func (t *Runner) ConsumeContext(ctx context.Context, cns jetstream.Consumer) error {
+func (t *Runner) ConsumeJetstream(ctx context.Context, gw *enats.Gateway, cns jetstream.Consumer) error {
 	if t.Rate.IsZero() {
 		consumer, err := cns.Consume(func(msg jetstream.Msg) {
-			t.Serve(ctx, msg)
+			t.ServeJetstream(ctx, gw, msg)
 		})
 		if err != nil {
 			return err
 		}
 		context.AfterFunc(ctx, consumer.Stop)
 	} else {
-		go func() {
-			left := uint(0)
-			next := time.Time{}
-
-			for ctx.Err() == nil {
-				// If we're past the previous period, reset the counter
-				now := time.Now()
-				if next.Before(now) {
-					next = now.Add(t.Rate.Period)
-					left = t.Rate.Count
-				}
-
-				sleep := time.Time{}
-				if left <= 0 {
-					// If we have no quota left, sleep until the next period
-					sleep = next
-				} else if msg, err := cns.Next(jetstream.FetchMaxWait(time.Minute)); err != nil {
-					// If we have quota left, but next errors, sleep for a bit
-					sleep = now.Add(1 * time.Second)
-				} else {
-					// Run the message handler and decrement the quota
-					t.Serve(ctx, msg)
-					left--
-				}
-
-				if !sleep.IsZero() {
-					select {
-					case <-ctx.Done():
-						return
-					case <-time.After(sleep.Sub(now)):
-					}
-				}
-			}
-		}()
+		go consumeWrapper(
+			ctx,
+			t.Rate,
+			func() (jetstream.Msg, error) { return cns.Next(jetstream.FetchMaxWait(time.Minute)) },
+			func(msg jetstream.Msg) { t.ServeJetstream(ctx, gw, msg) },
+		)
 	}
 	return nil
 }
-func (t *Runner) Listen(ctx context.Context, gw *enats.Gateway, topic string) (context.CancelFunc, error) {
-	subjects := enats.ToConsumerSubjects(topic)
-	queueName := enats.ToConsumerQueueName("worker-", topic)
-	ctx, cancel := context.WithCancel(ctx)
-	cns, err := gw.EventStream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:        queueName,
-		DeliverPolicy:  jetstream.DeliverAllPolicy,
-		AckPolicy:      jetstream.AckExplicitPolicy,
-		ReplayPolicy:   jetstream.ReplayInstantPolicy,
-		MaxDeliver:     -1,
-		MaxAckPending:  -1,
-		FilterSubjects: subjects,
-	})
-	if err != nil {
-		cancel()
-		return nil, err
+func (t *Runner) Listen(ctx context.Context, gw *enats.Gateway, topic string) (cancel context.CancelFunc, err error) {
+	ctx, cancel = context.WithCancel(ctx)
+	defer func() {
+		if err != nil {
+			cancel()
+		}
+	}()
+
+	// Normalize the subject, resolve the stream.
+	subj := enats.ToSubject(topic)
+	queue := enats.ToConsumerQueueName("run-", topic)
+	var streamName string
+	if strings.HasPrefix(subj, enats.EventStreamPrefix) {
+		streamName = gw.EventStream.CachedInfo().Config.Name
+	} else {
+		streamName, err = gw.Jet.StreamNameBySubject(ctx, subj)
 	}
-	err = t.ConsumeContext(ctx, cns)
-	if err != nil {
-		cancel()
-		return nil, err
+
+	if err == jetstream.ErrStreamNotFound {
+		// If the stream does not exist, this is a core subject
+		err = t.ConsumeCore(ctx, gw, subj, queue)
+		if err != nil {
+			err = fmt.Errorf("failed to consume core subject %q: %w", subj, err)
+			return
+		}
+		xlog.Info().Str("subject", topic).Str("queue", queue).Msg("Core task listening")
+	} else {
+		var cns jetstream.Consumer
+
+		// If the stream exists, this is a jetstream subject, resolve the stream and consumer
+		stream := gw.EventStream
+		if streamName != gw.EventStream.CachedInfo().Config.Name {
+			stream, err = gw.Jet.Stream(ctx, streamName)
+			if err != nil {
+				err = fmt.Errorf("failed to resolve stream %q: %w", streamName, err)
+				return
+			}
+		}
+		cns, err = stream.Consumer(ctx, queue)
+		if err == jetstream.ErrConsumerNotFound {
+			cns, err = gw.EventStream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
+				Durable:       queue,
+				DeliverPolicy: jetstream.DeliverAllPolicy,
+				AckPolicy:     jetstream.AckExplicitPolicy,
+				ReplayPolicy:  jetstream.ReplayInstantPolicy,
+				MaxDeliver:    -1,
+				MaxAckPending: -1,
+				FilterSubject: subj,
+			})
+		}
+		if err != nil {
+			err = fmt.Errorf("failed to resolve consumer for stream %q: %w", streamName, err)
+			return
+		} else if err = t.ConsumeJetstream(ctx, gw, cns); err != nil {
+			err = fmt.Errorf("failed to consume jetstream subject %q: %w", subj, err)
+			return
+		}
+		xlog.Info().Str("subject", topic).Str("queue", queue).Str("stream", streamName).Msg("Jetstream task listening")
 	}
-	xlog.Info().Str("subject", topic).Str("queue", queueName).Str("stream", gw.EventStream.CachedInfo().Config.Name).Msg("Task listening")
+
 	for i, sch := range t.Schedule {
-		go sch.Run(ctx, i, gw, topic, queueName)
+		go sch.Run(ctx, i, gw, topic, queue)
 	}
 	return cancel, nil
 }

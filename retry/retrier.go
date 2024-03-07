@@ -14,13 +14,11 @@ type Retrier struct {
 	Deadline time.Time
 }
 
-const RetrierMaxDelayCoeff = 20
-
 // Creates a retries with the given policy and context
 func (policy Policy) RetrierContext(ctx context.Context) Retrier {
 	rt := Retrier{
 		Context: ctx,
-		Policy:  policy.adjust(),
+		Policy:  policy.WithDefaults(),
 	}
 	rt.Deadline = time.Now().Add(rt.Policy.Timeout.Duration())
 	if deadline, ok := ctx.Deadline(); ok && deadline.Before(rt.Deadline) {
@@ -38,7 +36,6 @@ func (policy Policy) Retrier() Retrier {
 func (retry *Retrier) NextDelay() (delay time.Duration, err error) {
 	err = retry.Policy.Step(&retry.Step, &retry.Delay)
 	if err == nil {
-		retry.Delay = min(retry.Delay, retry.Policy.Backoff.Duration()*RetrierMaxDelayCoeff)
 		delay = retry.Delay
 	}
 	return

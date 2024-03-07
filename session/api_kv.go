@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -29,7 +30,7 @@ type KVCompareAndSwapResult struct {
 }
 
 func getKeyState(ctx context.Context, session *Session, key string) (state KVState, err error) {
-	kv := session.Nats.DefaultKVStore(key)
+	kv := session.Nats.DefaultKV
 	v, e := kv.Get(ctx, key)
 	if e == jetstream.ErrKeyNotFound {
 		kv.Create(ctx, key, []byte("null"))
@@ -47,7 +48,7 @@ func getKeyState(ctx context.Context, session *Session, key string) (state KVSta
 func init() {
 	Match("/kv/{key}/cas", func(session *Session, r *http.Request, p KVCompareAndSwap) (res KVCompareAndSwapResult, err error) {
 		key := r.PathValue("key")
-		kv := session.Nats.DefaultKVStore(key)
+		kv := session.Nats.DefaultKV
 		kvs, e := getKeyState(r.Context(), session, key)
 		if e != nil {
 			err = e
@@ -103,10 +104,9 @@ func init() {
 		key := r.PathValue("key")
 		return getKeyState(r.Context(), session, key)
 	})
-
 	Match("PUT /kv/{key}", func(session *Session, r *http.Request, p KVSetIf) (res uint64, err error) {
 		key := r.PathValue("key")
-		kv := session.Nats.DefaultKVStore(key)
+		kv := session.Nats.DefaultKV
 		var v uint64
 		if p.Revision != 0 {
 			v, err = kv.Update(r.Context(), key, p.Value, p.Revision)
@@ -121,14 +121,14 @@ func init() {
 
 	Match("POST /kv/{key}", func(session *Session, r *http.Request, p json.RawMessage) (res uint64, err error) {
 		key := r.PathValue("key")
-		kv := session.Nats.DefaultKVStore(key)
+		kv := session.Nats.DefaultKV
 		res, err = kv.Put(r.Context(), key, p)
 		return
 	})
 
 	Match("DELETE /kv/{key}", func(session *Session, r *http.Request, _ struct{}) (_ struct{}, err error) {
 		key := r.PathValue("key")
-		kv := session.Nats.DefaultKVStore(key)
+		kv := session.Nats.DefaultKV
 		err = kv.Purge(r.Context(), key)
 		return
 	})
@@ -144,7 +144,20 @@ func init() {
 		})
 	}
 	addKvList("GET /kv", func(session *Session) jetstream.KeyValue { return session.Nats.DefaultKV })
-	addKvList("GET /kv/d", func(session *Session) jetstream.KeyValue { return session.Nats.DailyKV })
-	addKvList("GET /kv/w", func(session *Session) jetstream.KeyValue { return session.Nats.WeeklyKV })
-	addKvList("GET /kv/m", func(session *Session) jetstream.KeyValue { return session.Nats.MonthlyKV })
+
+	Match("/result/{stream}/{seq}", func(session *Session, r *http.Request, _ struct{}) (res json.RawMessage, err error) {
+		stream, seq := r.PathValue("stream"), r.PathValue("seq")
+		kv := session.Nats.ResultKV
+		v, e := kv.Get(r.Context(), stream+"-"+seq)
+		if e == jetstream.ErrKeyNotFound {
+			err = errors.New("Result not found")
+			return
+		}
+		if e != nil {
+			err = e
+			return
+		}
+		res = v.Value()
+		return
+	})
 }

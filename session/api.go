@@ -98,6 +98,11 @@ func writeOutput(req *http.Request, w http.ResponseWriter, result any, e error) 
 		output = result
 	}
 
+	if raw, ok := output.(json.RawMessage); ok {
+		w.Write(raw)
+		return
+	}
+
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	if req.URL.Query().Has("pretty") {
