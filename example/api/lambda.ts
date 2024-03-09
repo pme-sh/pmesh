@@ -1,40 +1,36 @@
 import { WebSocket, createWebSocketStream } from "ws";
 
-type LambdaHandler = Record<string, (body: any) => any> | ((method: string, body: any) => any);
+type LambdaHandler = Record<string, (body: any) => any>;
 async function newLambda(handler: LambdaHandler): Promise<string> {
-	let cb: (method: string, body: any) => Promise<any>;
-	if (typeof handler === "function") {
-		cb = async (method, body) => {
-			return await handler(method, body);
-		};
-	} else {
-		cb = async (method, body) => {
-			if (handler[method]) {
-				return await handler[method](body);
-			} else {
-				throw new Error(`Method not found: ${method}`);
+	const duplex = createWebSocketStream(new WebSocket("ws://pm3/lambda/new"), { encoding: "utf-8" });
+
+	async function handle(id: any, method: string, body: any) {
+		let resp;
+		try {
+			const cb = handler[method];
+			if (!cb) {
+				throw new Error(`method not found: ${method}`);
 			}
-		};
+			const result = await cb(body);
+			resp = { id, result };
+		} catch (error) {
+			resp = { id, error: `${error}` };
+		}
+		console.log("->", resp);
+		duplex.write(JSON.stringify(resp));
 	}
 
-	const duplex = createWebSocketStream(new WebSocket("ws://pm3/lambda/new"), { encoding: "utf-8" });
 	return new Promise(async (resolve) => {
 		for await (const message of duplex) {
+			console.log("<-", message);
 			const { method, params, id } = JSON.parse(message);
 			if (method === "open") {
+				console.log("->", { id, result: "ok" });
 				duplex.write(JSON.stringify({ id, result: "ok" }));
 				resolve(params[0]);
 				continue;
 			}
-
-			cb(method, params[0] ?? {})
-				.then(
-					(result) => ({ id, result }),
-					(error) => ({ id, error: error.message })
-				)
-				.then((response) => {
-					duplex.write(JSON.stringify(response));
-				});
+			handle(id, method, params[0]);
 		}
 	});
 }

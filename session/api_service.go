@@ -22,9 +22,6 @@ type ServiceMetrics struct {
 	Type      string                    `json:"type"`
 	Server    lb.LoadBalancerMetrics    `json:"server"`
 	Processes []service.ProcTreeMetrics `json:"processes"`
-}
-type ServiceInfo struct {
-	ServiceMetrics
 	ServiceHealth
 }
 
@@ -70,6 +67,7 @@ func (m *ServiceMetrics) Fill(sv *ServiceState) {
 		return
 	}
 	m.ID = sv.ID
+	m.ServiceHealth.Fill(sv)
 
 	if sv.Instance != nil {
 		ty := reflect.TypeOf(sv.Instance)
@@ -92,10 +90,6 @@ func (m *ServiceMetrics) Fill(sv *ServiceState) {
 	if l, ok := sv.GetLoadBalancer(); ok && l != nil {
 		m.Server = l.Metrics()
 	}
-}
-func (m *ServiceInfo) Fill(sv *ServiceState) {
-	m.ServiceMetrics.Fill(sv)
-	m.ServiceHealth.Fill(sv)
 }
 
 func registerServiceView(name string, view func(*ServiceState) any) {
@@ -132,11 +126,13 @@ func init() {
 		m.Fill(sv)
 		return m
 	})
+	// deprecated alias
 	registerServiceView("info", func(sv *ServiceState) any {
-		var m ServiceInfo
+		var m ServiceMetrics
 		m.Fill(sv)
 		return m
 	})
+
 	Match("/service", func(session *Session, r *http.Request, _ struct{}) (res map[string]snowflake.ID, _ error) {
 		res = make(map[string]snowflake.ID)
 		session.ServiceMap.Range(func(_ string, v *ServiceState) bool {
