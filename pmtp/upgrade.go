@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net"
 	"net/http"
+	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -29,6 +30,20 @@ func MakeUpgradeServer[Proto ServerProtocol[Arg], Arg any](protos ...Proto) Upgr
 		Websocket: websocket.Upgrader{
 			ReadBufferSize:  32 * 1024,
 			WriteBufferSize: 32 * 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				// No browser will send a request with Origin not set or invalid.
+				origin := r.Header.Get("Origin")
+				if origin == "" {
+					return true
+				}
+				url, err := url.Parse(origin)
+				if err != nil {
+					return true
+				}
+
+				// Accept if pm3, localhost, 127.0.0.1.
+				return url.Host == "pm3" || url.Host == "localhost" || url.Host == "127.0.0.1"
+			},
 		},
 	}
 	for _, proto := range protos {
@@ -43,7 +58,7 @@ func (u *UpgradeServer[Proto, Arg]) Upgrade(w http.ResponseWriter, r *http.Reque
 		vhttp.Error(w, r, http.StatusMethodNotAllowed)
 		return
 	}
-	if r.Header.Get("Connection") != "Upgrade" {
+	if conn := r.Header.Get("Connection"); conn != "Upgrade" && conn != "upgrade" {
 		vhttp.Error(w, r, http.StatusBadRequest)
 		return
 	}

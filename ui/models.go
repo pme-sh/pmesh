@@ -83,7 +83,7 @@ type unblockMsg struct {
 	m tea.Msg
 }
 type updateMsg struct {
-	session.ServiceInfo
+	session.ServiceMetrics
 	err error
 }
 
@@ -97,7 +97,7 @@ type ServiceDetailModel struct {
 func (m ServiceDetailModel) Init() tea.Cmd {
 	return func() tea.Msg {
 		time.Sleep(100 * time.Millisecond)
-		info, err := m.cl.ServiceInfo(m.entry.Name)
+		info, err := m.cl.ServiceMetrics(m.entry.Name)
 		return updateMsg{info, err}
 	}
 }
@@ -108,7 +108,7 @@ func (m ServiceDetailModel) Update(msg tea.Msg) (PageModel, tea.Cmd) {
 		if msg.err != nil {
 			return m, ErrMsg(msg.err)
 		}
-		m.entry.ServiceInfo = msg.ServiceInfo
+		m.entry.ServiceMetrics = msg.ServiceMetrics
 		return m, m.Init()
 	case unblockMsg:
 		m.busy = false
@@ -282,11 +282,11 @@ func (m ServiceDetailModel) View(w, h int) string {
 }
 func (m ServiceDetailModel) Run() error {
 
-	u, err := m.cl.ServiceInfo(m.entry.Name)
+	u, err := m.cl.ServiceMetrics(m.entry.Name)
 	if err != nil {
 		return err
 	}
-	m.entry.ServiceInfo = u
+	m.entry.ServiceMetrics = u
 
 	fmt.Println(BasicTable(m.processListViewBasic()))
 	fmt.Println(BasicTable(m.upstreamViewBasic()))
@@ -295,7 +295,7 @@ func (m ServiceDetailModel) Run() error {
 
 type ServiceItem struct {
 	Name string
-	session.ServiceInfo
+	session.ServiceMetrics
 }
 
 func (i ServiceItem) Title() string {
@@ -531,7 +531,7 @@ func PromptSelectValueDesc[V cmp.Ordered](title string, vd map[V]string) V {
 }
 
 func PromptSelectService(cl client.Client) string {
-	mp, err := cl.ServiceInfoMap()
+	mp, err := cl.ServiceMetricsMap()
 	if err != nil {
 		ExitWithError(err)
 	}
@@ -544,11 +544,11 @@ func MakeServiceListModel(cl client.Client) Bimodel {
 	return NewList[*ServiceItem](del).
 		WithTitle("Services").
 		WithPull(func() ([]*ServiceItem, error) {
-			services, err := cl.ServiceInfoMap()
+			services, err := cl.ServiceMetricsMap()
 			if err != nil {
 				return nil, err
 			}
-			return MapToStableList(services, func(k string, sv session.ServiceInfo) *ServiceItem {
+			return MapToStableList(services, func(k string, sv session.ServiceMetrics) *ServiceItem {
 				return &ServiceItem{k, sv}
 			}), nil
 		}).

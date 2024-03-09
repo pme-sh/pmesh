@@ -21,14 +21,6 @@ func (c Client) ServiceMetricsMap() (m map[string]session.ServiceMetrics, err er
 	err = c.Call("/service/metrics", nil, &m)
 	return
 }
-func (c Client) ServiceInfo(name string) (m session.ServiceInfo, err error) {
-	err = c.Call("/service/info/"+name, nil, &m)
-	return
-}
-func (c Client) ServiceInfoMap() (m map[string]session.ServiceInfo, err error) {
-	err = c.Call("/service/info", nil, &m)
-	return
-}
 func (c Client) ServiceRestart(name string, invalidate bool) (res session.ServiceCommandResult, err error) {
 	err = c.Call("/service/restart/"+name, session.ServiceInvalidate{Invalidate: invalidate}, &res)
 	return
