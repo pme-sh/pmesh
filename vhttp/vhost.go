@@ -2,9 +2,11 @@ package vhttp
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"get.pme.sh/pmesh/config"
@@ -12,14 +14,55 @@ import (
 	"get.pme.sh/pmesh/netx"
 	"get.pme.sh/pmesh/security"
 	"get.pme.sh/pmesh/xlog"
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/samber/lo"
 )
 
-type VirtualHostOptions struct {
-	Hostnames []string `yaml:"-"`
-	NoUpgrade bool     `yaml:"no_upgrade,omitempty"` // Do not upgrade HTTP to HTTPS.
+type CertProvider struct {
+	CertPath string `yaml:"cert,omitempty"` // Path to the TLS certificate.
+	KeyPath  string `yaml:"key,omitempty"`  // Path to the TLS key.
+	certMu   sync.Mutex
+	cache    atomic.Pointer[tls.Certificate]
 }
+
+var getLetsEncrypt = sync.OnceValue(func() *autocert.Manager {
+	return &autocert.Manager{
+		Prompt: autocert.AcceptTOS,
+		Cache:  autocert.DirCache(config.CertDir.Path()),
+	}
+})
+
+func (cp *CertProvider) GetCertificate(chi *tls.ClientHelloInfo) (cert *tls.Certificate, err error) {
+	if cp.CertPath == "letsencrypt" {
+		return getLetsEncrypt().GetCertificate(chi)
+	} else if cp.CertPath != "" {
+		if cert = cp.cache.Load(); cert != nil {
+			return
+		}
+
+		cp.certMu.Lock()
+		defer cp.certMu.Unlock()
+		if cert = cp.cache.Load(); cert != nil {
+			return
+		}
+
+		scert, err := security.LoadCertificate(cp.CertPath, cp.KeyPath)
+		if err == nil {
+			cp.cache.Store(scert.TLS)
+			cert = scert.TLS
+		}
+		return cert, err
+	}
+	return nil, errors.New("no certificate")
+}
+
+type VirtualHostOptions struct {
+	Hostnames []string                 `yaml:"-"`
+	NoUpgrade bool                     `yaml:"no_upgrade,omitempty"` // Do not upgrade HTTP to HTTPS.
+	Certs     map[string]*CertProvider `yaml:"certs,omitempty"`      // TLS certificates.
+}
+
 type VirtualHost struct {
 	VirtualHostOptions
 	Mux
@@ -140,6 +183,14 @@ func (mux *TopLevelMux) GetCertificate(chi *tls.ClientHelloInfo) (cert *tls.Cert
 	if sni := chi.ServerName; sni != "" {
 		_, _, vhg = hosts.MatchMap(unique, sni)
 		if vhg != nil {
+			for _, vh := range vhg.hosts {
+				if vh.Certs != nil {
+					_, _, prov := hosts.MatchMap(vh.Certs, sni)
+					if prov != nil {
+						return prov.GetCertificate(chi)
+					}
+				}
+			}
 			cert = security.ObtainCertificate(config.Get().Secret, sni).TLS
 		}
 	}

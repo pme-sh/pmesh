@@ -20,6 +20,7 @@ import (
 	"get.pme.sh/pmesh/security"
 	"get.pme.sh/pmesh/urlsigner"
 	"get.pme.sh/pmesh/xlog"
+	"golang.org/x/crypto/acme"
 )
 
 type ipinfoWrapper struct{ netx.IPInfoProvider }
@@ -189,7 +190,7 @@ func NewServer(ctx context.Context) (s *Server) {
 			GetCertificate:           s.GetCertificate,
 			PreferServerCipherSuites: true,
 			CurvePreferences:         []tls.CurveID{tls.CurveP256, tls.X25519},
-			NextProtos:               []string{"h2", "http/1.1"},
+			NextProtos:               []string{"h2", "http/1.1", acme.ALPNProto},
 		}),
 	}
 	s.Server.RegisterOnShutdown(func() { logw.Flush() })
