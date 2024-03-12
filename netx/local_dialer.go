@@ -90,7 +90,7 @@ func MakeLocalTransport(idle int, max int, opts *http.Transport) *http.Transport
 
 var LocalTransport = MakeLocalTransport(16384, 0, &http.Transport{
 	TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-	ResponseHeaderTimeout: 10 * time.Second,
+	ResponseHeaderTimeout: 1 * time.Minute,
 })
 var LocalH2Transport = &http2.Transport{
 	DisableCompression: true,
