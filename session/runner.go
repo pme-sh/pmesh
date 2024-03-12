@@ -278,7 +278,7 @@ func (t *Runner) ServeJetstream(ctx context.Context, gw *enats.Gateway, msg jets
 		}
 		msg.Term()
 	} else {
-		logger.Trace().Msg("Task completed")
+		logger.Debug().Msg("Task completed")
 		if len(data) != 0 {
 			_, err := gw.ResultKV.Put(
 				context.Background(),

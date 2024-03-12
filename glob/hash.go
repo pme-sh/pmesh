@@ -12,6 +12,8 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"get.pme.sh/pmesh/util"
 )
 
 const hashSize = sha1.Size
@@ -77,8 +79,9 @@ func (l *HashList) Dir(prefix string) Checksum {
 }
 func (l *HashList) All() Checksum {
 	h := hasher()
-	for _, hash := range l.HashMap {
-		h.Write(hash.Slice())
+	for _, file := range l.StableList {
+		h.Write(util.UnsafeBuffer(file))
+		h.Write(l.HashMap[file].Slice())
 	}
 	return Checksum(h.Sum(nil))
 }
