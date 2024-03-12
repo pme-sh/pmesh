@@ -2,6 +2,7 @@ package npm
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,7 +23,8 @@ type Package struct {
 	Dependencies    map[string]string `json:"dependencies,omitempty"`
 	DevDependencies map[string]string `json:"devDependencies,omitempty"`
 	Scripts         map[string]string `json:"scripts,omitempty"`
-	Exports         map[string]string `json:"exports"`
+	Exports         map[string]any    `json:"exports,omitempty"`
+	Bin             map[string]string `json:"bin,omitempty"`
 }
 
 func (p *Package) String() string {
@@ -164,11 +166,19 @@ func (p *Package) ResolveDependency(mgr string, dep string) (pkg *Package, err e
 }
 
 func (p *Package) ResolveExport(str string) (out string, err error) {
+	if rest, ok := strings.CutPrefix(str, "$bin/"); ok {
+		if bin, ok := p.Bin[rest]; ok {
+			return filepath.Join(p.Root, bin), nil
+		}
+		return "", fmt.Errorf("bin-export not found: %s", str)
+	}
 	str = strings.TrimPrefix(path.Clean(str), "./")
 	if str == "." {
 		if p.Exports != nil {
 			if imp, ok := p.Exports["."]; ok {
-				return filepath.Join(p.Root, imp), nil
+				if imps, ok := imp.(string); ok {
+					return filepath.Join(p.Root, imps), nil
+				}
 			}
 		}
 		if p.Main != "" {
@@ -177,13 +187,15 @@ func (p *Package) ResolveExport(str string) (out string, err error) {
 	}
 	if p.Exports != nil {
 		str = "./" + str
-		for k, v := range p.Exports {
-			if str == k {
-				return filepath.Join(p.Root, v), nil
-			}
-			if strings.HasSuffix(k, "/*") && strings.HasPrefix(str, k) {
-				str = strings.TrimSuffix(k, "/*")
-				return filepath.Join(p.Root, v, strings.TrimPrefix(str, k)), nil
+		for k, va := range p.Exports {
+			if v, ok := va.(string); ok {
+				if str == k {
+					return filepath.Join(p.Root, v), nil
+				}
+				if strings.HasSuffix(k, "/*") && strings.HasPrefix(str, k) {
+					str = strings.TrimSuffix(k, "/*")
+					return filepath.Join(p.Root, v, strings.TrimPrefix(str, k)), nil
+				}
 			}
 		}
 	}
@@ -207,6 +219,7 @@ func (pkg *Package) TryEscapeScript(mgr string, scriptName string) (executable s
 		if err == nil && len(parts) > 0 {
 			cmd := parts[0]
 			var importedScript string
+			var executedScript string
 			switch cmd {
 			case "tsx":
 				importedScript = "tsx"
@@ -216,18 +229,27 @@ func (pkg *Package) TryEscapeScript(mgr string, scriptName string) (executable s
 				importedScript = "ts-node"
 			case "ts-node-esm":
 				importedScript = "ts-node/esm"
+			case "vite":
+				executedScript = "vite/$bin/vite"
 			}
 			// If we have a known script, try to run it with node
-			if importedScript != "" {
+			if importedScript != "" || executedScript != "" {
 				_, err := exec.LookPath("node")
 				if err != nil {
 					return mgr, []string{"run", "-s", scriptName}
 				}
-				if p, err := pkg.ResolveImport(mgr, importedScript); err == nil {
-					args := []string{
-						"--experimental-specifier-resolution=node",
-						"--import",
-						"file://" + p,
+
+				scriptName = cmp.Or(executedScript, importedScript)
+				if p, err := pkg.ResolveImport(mgr, scriptName); err == nil {
+					var args []string
+					if importedScript != "" {
+						args = []string{
+							"--experimental-specifier-resolution=node",
+							"--import",
+							"file://" + p,
+						}
+					} else {
+						args = []string{p}
 					}
 					args = append(args, parts[1:]...)
 					return "node", args

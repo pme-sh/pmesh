@@ -353,24 +353,26 @@ func (s *Session) Open(ctx context.Context) error {
 	s.Peerlist.AddSDSource(func(out map[string]any) {
 		out["commit"] = os.Getenv("PM3_COMMIT")
 		out["branch"] = os.Getenv("PM3_BRANCH")
-		var healthyServices []string
-		for _, sv := range s.Manifest().Services {
-			if svc, ok := s.ServiceMap.Load(sv.A); ok {
-				if svc.ctx.Err() != nil {
-					continue
-				}
-				if lb, ok := svc.Instance.(service.InstanceLB); ok {
-					if l := lb.GetLoadBalancer(); l != nil {
-						if l.Healthy() {
-							healthyServices = append(healthyServices, sv.A)
-						}
+		if manifest := s.Manifest(); manifest != nil {
+			var healthyServices []string
+			for _, sv := range s.Manifest().Services {
+				if svc, ok := s.ServiceMap.Load(sv.A); ok {
+					if svc.ctx.Err() != nil {
+						continue
 					}
-				} else {
-					healthyServices = append(healthyServices, sv.A)
+					if lb, ok := svc.Instance.(service.InstanceLB); ok {
+						if l := lb.GetLoadBalancer(); l != nil {
+							if l.Healthy() {
+								healthyServices = append(healthyServices, sv.A)
+							}
+						}
+					} else {
+						healthyServices = append(healthyServices, sv.A)
+					}
 				}
 			}
+			out["services"] = healthyServices
 		}
-		out["services"] = healthyServices
 	})
 
 	// Start the server
