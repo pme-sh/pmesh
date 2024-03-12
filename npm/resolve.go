@@ -14,6 +14,49 @@ import (
 	"github.com/google/shlex"
 )
 
+// Handles:
+// - "a"
+// - {"a":"b"}
+// - {"a":{"b":"c"}}
+type ExportTable struct {
+	s string
+	v map[string]ExportTable
+}
+
+func (t *ExportTable) Resolve(str string) (out string, ok bool) {
+	if t.s != "" {
+		return t.s, true
+	}
+	if t.v != nil {
+		if v, ok := t.v[str]; ok {
+			return v.Resolve(".")
+		}
+		for k, v := range t.v {
+			if rest, ok := strings.CutSuffix(k, "/*"); ok {
+				if str == rest {
+					return v.Resolve(".")
+				}
+				rest = k[:len(k)-1]
+				if sr, ok := strings.CutPrefix(str, rest); ok {
+					return v.Resolve(sr)
+				}
+			}
+		}
+	}
+	return "", false
+}
+
+func (t *ExportTable) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || data[0] == 'n' {
+		*t = ExportTable{}
+		return nil
+	}
+	if data[0] == '{' {
+		return json.Unmarshal(data, &t.v)
+	}
+	return json.Unmarshal(data, &t.s)
+}
+
 type Package struct {
 	Root            string            `json:"-"`
 	Name            string            `json:"name,omitempty"`
@@ -23,8 +66,8 @@ type Package struct {
 	Dependencies    map[string]string `json:"dependencies,omitempty"`
 	DevDependencies map[string]string `json:"devDependencies,omitempty"`
 	Scripts         map[string]string `json:"scripts,omitempty"`
-	Exports         map[string]any    `json:"exports,omitempty"`
-	Bin             map[string]string `json:"bin,omitempty"`
+	Exports         ExportTable       `json:"exports,omitempty"`
+	Bin             ExportTable       `json:"bin,omitempty"`
 }
 
 func (p *Package) String() string {
@@ -45,7 +88,6 @@ type packageResolution struct {
 	Dependencies    map[string]resolvedDependency `json:"dependencies,omitempty"`
 	DevDependencies map[string]resolvedDependency `json:"devDependencies,omitempty"`
 }
-type pnpmPackageResolution = []packageResolution
 
 func resolvePackageManuallyInContext(cwd string, packageName string) (dep string) {
 	path := filepath.Join(cwd, "node_modules", packageName)
@@ -167,37 +209,22 @@ func (p *Package) ResolveDependency(mgr string, dep string) (pkg *Package, err e
 
 func (p *Package) ResolveExport(str string) (out string, err error) {
 	if rest, ok := strings.CutPrefix(str, "$bin/"); ok {
-		if bin, ok := p.Bin[rest]; ok {
+		if bin, ok := p.Bin.Resolve(rest); ok {
 			return filepath.Join(p.Root, bin), nil
 		}
 		return "", fmt.Errorf("bin-export not found: %s", str)
 	}
 	str = strings.TrimPrefix(path.Clean(str), "./")
 	if str == "." {
-		if p.Exports != nil {
-			if imp, ok := p.Exports["."]; ok {
-				if imps, ok := imp.(string); ok {
-					return filepath.Join(p.Root, imps), nil
-				}
-			}
+		if imp, ok := p.Exports.Resolve("."); ok {
+			return filepath.Join(p.Root, imp), nil
 		}
 		if p.Main != "" {
 			return p.Main, nil
 		}
 	}
-	if p.Exports != nil {
-		str = "./" + str
-		for k, va := range p.Exports {
-			if v, ok := va.(string); ok {
-				if str == k {
-					return filepath.Join(p.Root, v), nil
-				}
-				if strings.HasSuffix(k, "/*") && strings.HasPrefix(str, k) {
-					str = strings.TrimSuffix(k, "/*")
-					return filepath.Join(p.Root, v, strings.TrimPrefix(str, k)), nil
-				}
-			}
-		}
+	if imp, ok := p.Exports.Resolve(str); ok {
+		return filepath.Join(p.Root, imp), nil
 	}
 	return "", fmt.Errorf("export not found: %s", str)
 }
