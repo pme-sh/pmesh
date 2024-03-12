@@ -32,6 +32,8 @@ func (t *ExportTable) Resolve(str string) (out string, ok bool) {
 			return v.Resolve(".")
 		}
 		for k, v := range t.v {
+			k = strings.TrimPrefix(k, ".")
+			k = strings.TrimPrefix(k, "/")
 			if rest, ok := strings.CutSuffix(k, "/*"); ok {
 				if str == rest {
 					return v.Resolve(".")
