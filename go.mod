@@ -1,6 +1,6 @@
 module get.pme.sh/pmesh
 
-go 1.22
+go 1.22.1
 
 require (
 	get.pme.sh/pnats v0.0.0-20240304004023-26bb5a137ed0
