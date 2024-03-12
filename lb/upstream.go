@@ -25,6 +25,9 @@ type Upstream struct {
 }
 
 func (u *Upstream) String() string {
+	if u == nil {
+		return "none"
+	}
 	return u.Address
 }
 

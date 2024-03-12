@@ -90,9 +90,9 @@ var defaultErrorParams = map[int]ErrorPageParams{
 		Solution:    "Please try again in a few minutes, or contact support if the problem persists.",
 	},
 	StatusUpstreamError: {
-		Template:    "internal.html",
+		Template:    "5xx.html",
 		StatusSent:  http.StatusInternalServerError,
-		Title:       "Internal Session Error",
+		Title:       "Internal Upstream Error",
 		Explanation: "An internal server error occurred.",
 		Solution:    "Please try again in a few minutes, or contact support if the problem persists.",
 	},
