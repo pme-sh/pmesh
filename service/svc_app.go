@@ -20,6 +20,7 @@ import (
 	"get.pme.sh/pmesh/glob"
 	"get.pme.sh/pmesh/health"
 	"get.pme.sh/pmesh/lb"
+	"get.pme.sh/pmesh/rundown"
 	"get.pme.sh/pmesh/security"
 	"get.pme.sh/pmesh/util"
 	"get.pme.sh/pmesh/vhttp"
@@ -510,6 +511,12 @@ type AppServer struct {
 }
 
 func (run *AppServer) spawnProcess(initialProcess bool) (err error) {
+	select {
+	case <-rundown.Signal:
+		return errors.New("shutting down")
+	default:
+	}
+
 	pctx, die := context.WithCancelCause(run.Context)
 	defer func() {
 		if err != nil {
@@ -601,6 +608,10 @@ func (run *AppServer) spawnProcess(initialProcess bool) (err error) {
 					break
 				}
 				select {
+				case <-rundown.Signal:
+					err = errors.New("shutting down")
+					die(err)
+					return
 				case <-pctx.Done():
 					return context.Cause(pctx)
 				case <-readyCtx.Done():

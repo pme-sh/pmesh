@@ -4,17 +4,22 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
 var Signal = make(chan struct{})
+
+var Force = sync.OnceFunc(func() {
+	close(Signal)
+})
 
 func init() {
 	go func() {
 		var stopChan = make(chan os.Signal, 2)
 		signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 		<-stopChan
-		close(Signal)
+		Force()
 	}()
 }
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"get.pme.sh/pmesh/enats"
+	"get.pme.sh/pmesh/rundown"
 	"get.pme.sh/pmesh/vhttp"
 	"get.pme.sh/pmesh/xpost"
 
@@ -54,8 +55,8 @@ func init() {
 	Match("/shutdown", func(session *Session, r *http.Request, p struct{}) (_ any, err error) {
 		go func() {
 			time.Sleep(500 * time.Millisecond)
+			rundown.Force()
 			session.Shutdown(context.Background())
-			session.Close()
 		}()
 		return
 	})

@@ -30,8 +30,9 @@ type Server struct {
 	readych chan struct{}
 	donech  chan struct{}
 
-	ready, done bool
-	mu          sync.Mutex
+	ready, done  bool
+	shuttingDown atomic.Bool
+	mu           sync.Mutex
 }
 
 func (s *Server) Ready() <-chan struct{} { return s.readych }
@@ -96,7 +97,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	sv.Shutdown()
+	if !s.shuttingDown.Swap(true) {
+		sv.Shutdown()
+	}
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
