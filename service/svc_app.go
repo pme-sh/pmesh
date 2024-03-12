@@ -56,6 +56,7 @@ type AppService struct {
 	AutoScaleDefer   util.Duration      `yaml:"auto_scale_defer,omitempty"`  // The time to wait until considering a process in auto-scaling.
 	UpscalePercent   float64            `yaml:"upscale_percent,omitempty"`   // The percentage of CPU usage to trigger upscale.
 	DownscalePercent float64            `yaml:"downscale_percent,omitempty"` // The percentage of CPU usage to trigger downscale.
+	Stdin            bool               `yaml:"stdin,omitempty"`             // If true, the app will read from stdin.
 	cluterN          int
 	clusterMin       int
 }
@@ -194,6 +195,11 @@ func (app *AppService) createCmd(c context.Context, cmd *Command, build bool, ch
 	} else {
 		g.Stdout = nil
 		g.Stderr = nil
+	}
+	if app.Stdin && !build {
+		g.Stdin = os.Stdin
+	} else {
+		g.Stdin = nil
 	}
 	return
 }
