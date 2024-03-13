@@ -379,8 +379,8 @@ func StartServer(opts Options) (srv *Server, err error) {
 
 			// Try messaging the jetstream API up to 5 times
 			var jserr error
-			for i := 0; i < 5; i++ {
-				_, jserr = conn.Request("$JS.API.INFO", nil, 100*time.Millisecond)
+			for i := 1; i <= 10; i++ {
+				_, jserr = conn.Request("$JS.API.INFO", nil, time.Duration(i*100)*time.Millisecond)
 				if jserr == nil {
 					break
 				}
