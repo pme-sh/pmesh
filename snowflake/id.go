@@ -5,13 +5,11 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"sync/atomic"
 	"time"
 
 	"get.pme.sh/pmesh/util"
-
 	"github.com/samber/lo"
 	"github.com/shirou/gopsutil/v3/host"
 )
@@ -84,66 +82,70 @@ func From(value any) ID {
 	}
 }
 
-func (value ID) String() string {
-	return strconv.FormatUint(uint64(value), 10)
+func (i ID) String() string {
+	return strconv.FormatUint(uint64(i), 10)
 }
-func (value ID) Valid() bool {
-	return 0 < uint64(value) && uint64(value) < 0xffffffffffffffff
+func (i ID) Valid() bool {
+	return 0 < uint64(i) && uint64(i) < 0xffffffffffffffff
 }
-func (value ID) IsZero() bool {
-	return value == 0
+func (i ID) IsZero() bool {
+	return i == 0
 }
-func (value ID) Lowerbound() ID {
-	return ID(uint64(value) & ^SeqMask)
+func (i ID) Lowerbound() ID {
+	return ID(uint64(i) & ^(SeqMask | MachineIDMask))
 }
-func (value ID) Upperbound() ID {
-	return ID(uint64(value) | SeqMask)
+func (i ID) Upperbound() ID {
+	return ID(uint64(i) | SeqMask | MachineIDMask)
 }
-func (value ID) Sequence() uint32 {
-	return uint32(value) & uint32(SeqMask)
+func (i ID) Sequence() uint32 {
+	return uint32(i) & uint32(SeqMask)
 }
-func (value ID) MachineID() uint32 {
-	return (uint32(value) & uint32(MachineIDMask)) >> MachineIDShift
+func (i ID) MachineID() uint32 {
+	return (uint32(i) & uint32(MachineIDMask)) >> MachineIDShift
 }
-func (value ID) Timestamp() time.Time {
-	return time.UnixMilli(int64((uint64(value) >> TimestampShift) + uint64(EpochBegin)))
+func (i ID) Timestamp() time.Time {
+	return time.UnixMilli(int64((uint64(i) >> TimestampShift) + uint64(EpochBegin)))
 }
-func (value ID) MarshalText() (b []byte, e error) {
-	b = strconv.AppendUint(b, uint64(value), 10)
-	return
+func (i ID) MarshalText() (res []byte, e error) {
+	res = make([]byte, 0, 20)
+	res = strconv.AppendUint(res, uint64(i), 10)
+	return res, nil
 }
-func (value *ID) UnmarshalText(data []byte) error {
-	str := util.UnsafeString(data)
-	val, err := strconv.ParseUint(str, 10, 64)
+func (i *ID) UnmarshalText(data []byte) error {
+	val, err := strconv.ParseUint(util.UnsafeString(data), 10, 64)
 	if err != nil {
 		return err
 	}
-	*value = ID(val)
+	*i = ID(val)
 	return nil
 }
-func (value ID) ToSlice() []byte {
+func (i ID) ToSlice() []byte {
 	var buf [8]byte
-	binary.LittleEndian.PutUint64(buf[:], uint64(value))
+	binary.LittleEndian.PutUint64(buf[:], uint64(i))
 	return buf[:]
 }
-func (value ID) MarshalJSON() ([]byte, error) {
-	if value == 0 {
+func (i ID) MarshalJSON() (res []byte, e error) {
+	if i == 0 {
 		return []byte("null"), nil
 	}
-	return []byte(fmt.Sprintf(`"%d"`, uint64(value))), nil
+	res = make([]byte, 1, 20)
+	res[0] = '"'
+	res = strconv.AppendUint(res, uint64(i), 10)
+	res = append(res, '"')
+	return res, nil
 }
 
-func (value *ID) UnmarshalJSON(data []byte) error {
+func (i *ID) UnmarshalJSON(data []byte) error {
 	if len(data) == 0 || data[0] == 'n' {
-		*value = 0
+		*i = 0
 		return nil
 	}
 	if data[0] != '"' {
 		var ui uint64
 		err := json.Unmarshal(data, &ui)
-		*value = ID(ui)
+		*i = ID(ui)
 		return err
 	} else {
-		return value.UnmarshalText(data[1 : len(data)-1])
+		return i.UnmarshalText(data[1 : len(data)-1])
 	}
 }
