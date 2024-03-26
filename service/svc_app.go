@@ -532,7 +532,7 @@ func (run *AppServer) spawnProcess(initialProcess bool) (err error) {
 	// Allocate an IP address and create the upstream.
 	var upstream *lb.Upstream
 	if run.LoadBalancer != nil {
-		const port = 70
+		const port = 8080
 		ip, err := SubnetAllocator().AllocateContext(pctx, port)
 		if err != nil {
 			return err

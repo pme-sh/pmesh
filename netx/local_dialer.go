@@ -28,7 +28,10 @@ func GetLocalDialerSocketCount() int64 {
 	return localDialerSocketCount.Load()
 }
 
-func NewTracedConn(conn net.Conn) *TracedConn {
+func NewTracedConn(conn net.Conn) net.Conn {
+	if !DebugSocketCount {
+		return conn
+	}
 	x := localDialerSocketCount.Add(1)
 	if x&255 == 0 && x != 0 && DebugSocketCount {
 		xlog.Info().Int64("n", x).Stringer("local", conn.LocalAddr()).Stringer("remote", conn.RemoteAddr()).Msg("Socket created")

@@ -90,7 +90,7 @@ func (c Client) tailBroadcast(ctx context.Context, dialer *pmtp.Dialer, u *pmtp.
 			if peer.Me {
 				host = u.Host
 			}
-			err := tail(ctx, dialer, u.TLS, host, to, out.SubWriter(peer.Host))
+			err := tail(ctx, dialer, true, host, to, out.SubWriter(peer.Host))
 			if err != nil {
 				errs[i] = fmt.Errorf("host %s: %w", peer.Host, err)
 			}
