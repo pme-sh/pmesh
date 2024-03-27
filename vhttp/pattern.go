@@ -49,10 +49,11 @@ func (p patternSuffix) Match(host, path string) bool {
 	if patternLen <= pathLen {
 		return path[pathLen-patternLen:] == p.suffix
 	}
-	if path != p.suffix[pathLen:] {
+	pos := patternLen - pathLen
+	if path != p.suffix[pos:] {
 		return false
 	}
-	sfx := p.suffix[:pathLen]
+	sfx := p.suffix[:pos]
 	return strings.HasSuffix(host, sfx)
 }
 
