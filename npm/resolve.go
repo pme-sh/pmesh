@@ -107,6 +107,10 @@ func resolvePackageInContext(mgr string, cwd string, packageName string, global 
 		}
 	}
 
+	if mgr == "bun" {
+		return nil, fmt.Errorf("bun does not support package resolution")
+	}
+
 	stdout := bytes.NewBuffer(nil)
 	var cmd *exec.Cmd
 	if global {
@@ -241,6 +245,17 @@ func (p *Package) ResolveImport(mgr string, imp string) (path string, err error)
 func (pkg *Package) TryEscapeScript(mgr string, scriptName string) (executable string, arguments []string) {
 	script := pkg.Scripts[scriptName]
 
+	// Apply fallbacks
+	engine := "node"
+	if mgr == "bun" {
+		engine = "bun"
+		executable = "bun"
+		arguments = []string{"run", scriptName}
+	} else {
+		executable = mgr
+		arguments = []string{"run", "-s", scriptName}
+	}
+
 	// If known script with no shell-like characters:
 	if script != "" && !strings.Contains(script, "&") && !strings.Contains(script, "|") && !strings.Contains(script, ">") {
 		// If we successfully split the script:
@@ -249,39 +264,56 @@ func (pkg *Package) TryEscapeScript(mgr string, scriptName string) (executable s
 			cmd := parts[0]
 			var importedScript string
 			var executedScript string
+
 			switch cmd {
+			case "node", "nodejs", "deno", "bun":
+				// enforce engine
+				return engine, parts[1:]
 			case "tsx":
 				importedScript = "tsx"
+				if mgr == "bun" {
+					return // Not necessary as bun can run TypeScript directly
+				}
 			case "tsc":
-				importedScript = "typescript"
+				executedScript = "typescript"
 			case "ts-node":
 				importedScript = "ts-node"
+				if mgr == "bun" {
+					return // Not necessary as bun can run TypeScript directly
+				}
 			case "ts-node-esm":
 				importedScript = "ts-node/esm"
+				if mgr == "bun" {
+					return // Not necessary as bun can run TypeScript directly
+				}
 			case "vite":
 				executedScript = "vite/$bin/vite"
 			}
+
 			// If we have a known script, try to run it with node
 			if importedScript != "" || executedScript != "" {
-				_, err := exec.LookPath("node")
+				// Bun does not support --import
+				if importedScript != "" {
+					return
+				}
+				_, err := exec.LookPath(engine)
 				if err != nil {
-					return mgr, []string{"run", "-s", scriptName}
+					return
 				}
 
-				scriptName = cmp.Or(executedScript, importedScript)
-				if p, err := pkg.ResolveImport(mgr, scriptName); err == nil {
+				resolvedScriptName := cmp.Or(executedScript, importedScript)
+				if p, err := pkg.ResolveImport(mgr, resolvedScriptName); err == nil {
 					var args []string
 					if importedScript != "" {
-						args = []string{
-							"--experimental-specifier-resolution=node",
-							"--import",
-							"file://" + p,
+						if engine == "node" {
+							args = []string{"--experimental-specifier-resolution=node"}
 						}
+						args = append(args, "--import", "file://"+p)
 					} else {
 						args = []string{p}
 					}
 					args = append(args, parts[1:]...)
-					return "node", args
+					return engine, args
 				}
 			}
 
@@ -293,7 +325,7 @@ func (pkg *Package) TryEscapeScript(mgr string, scriptName string) (executable s
 	}
 
 	// Fallback to running the script with the package manager
-	return mgr, []string{"run", "-s", scriptName}
+	return
 }
 
 func ResolveGlobalPackage(mgr string, pkg string) (p *Package, err error) {

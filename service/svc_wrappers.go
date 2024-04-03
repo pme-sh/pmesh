@@ -84,6 +84,8 @@ func (app *NpmApp) Prepare(opt Options) error {
 			app.PackageManager = "pnpm"
 		} else if _, err := exec.LookPath("yarn"); err == nil {
 			app.PackageManager = "yarn"
+		} else if _, err := exec.LookPath("bun"); err == nil {
+			app.PackageManager = "bun"
 		}
 	}
 
@@ -117,7 +119,11 @@ func (app *NpmApp) Prepare(opt Options) error {
 		app.Run = run
 	}
 	if !app.NoInstall {
-		app.Build = append(app.Build, NewCommand(app.PackageManager, "install", "--production=false"))
+		if app.PackageManager == "bun" {
+			app.Build = append(app.Build, NewCommand(app.PackageManager, "install"))
+		} else {
+			app.Build = append(app.Build, NewCommand(app.PackageManager, "install", "--production=false"))
+		}
 	}
 	if app.BuildScript != "none" {
 		cmd, args := pkg.TryEscapeScript(app.PackageManager, app.BuildScript)
@@ -255,6 +261,7 @@ func init() {
 	Registry.Define("Npm", func() any { return &NpmApp{} })
 	Registry.Define("Pnpm", func() any { return &NpmApp{PackageManager: "pnpm"} })
 	Registry.Define("Yarn", func() any { return &NpmApp{PackageManager: "yarn"} })
+	Registry.Define("Bun", func() any { return &NpmApp{PackageManager: "bun"} })
 	Registry.Define("Go", func() any { return &GoApp{} })
 	Registry.Define("Py", func() any { return &PyApp{} })
 	Registry.Define("Flask", func() any { return &FlaskApp{} })
