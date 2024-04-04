@@ -17,7 +17,7 @@ import (
 	atomicfile "github.com/natefinch/atomic"
 )
 
-const remoteRecheckInterval = 4 * time.Hour
+const remoteRecheckInterval = 32 * time.Hour
 
 type RemoteFile struct {
 	uri      string
